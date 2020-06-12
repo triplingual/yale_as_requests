@@ -407,10 +407,12 @@ class AeonRecordMapper
         Rails.logger.info("Aeon Fulfillment Plugin") { "Checking \"#{current_uri}\" for Top Container instances..." }
         Rails.logger.debug("Aeon Fulfillment Plugin") { "#{record_json.to_json}" }
 
-        instances = record_json['instances']
-            .reject { |instance| instance['digital_object'] }
+        if record_json['instances'].present?
+          instances = record_json['instances']
+              .reject { |instance| instance['digital_object'] }
+        end
 
-        if instances.any?
+        if instances.try(:any?)
             Rails.logger.info("Aeon Fulfillment Plugin") { "Top Container instances found" }
             return instances
         end
