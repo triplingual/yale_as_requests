@@ -3,5 +3,4 @@ en:
     aeon_fulfillment:
       request_button_icon: fa fa-external-link fa-external-link-alt fa-3x
       request_button_label: Aeon Request
-      request_button_inactive_message: |
-        Requesting not available at this level. Use <strong>Navigate the Collection</strong> to select an item to request.
+      requesting_disabled: Requesting is not available for this record.
