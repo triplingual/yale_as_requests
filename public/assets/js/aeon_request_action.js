@@ -1,3 +1,3 @@
 $(document).ready(function() {
-    $('#disabled-button-wrapper').tooltip()
+    $('#disabled-button-wrapper').tooltip({html:true})
 });
