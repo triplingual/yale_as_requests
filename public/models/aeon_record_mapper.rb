@@ -407,8 +407,8 @@ class AeonRecordMapper
         Rails.logger.info("Aeon Fulfillment Plugin") { "Checking \"#{current_uri}\" for Top Container instances..." }
         Rails.logger.debug("Aeon Fulfillment Plugin") { "#{record_json.to_json}" }
 
-        #this whole bit about inheriting containers doesn't work with our other plugin, so just skipping it for now.
-        #the container pges will still get a few checks below, but those will always evaluate to false.
+        #this whole bit about inheriting containers doesn't work with our other plugin (it gets passed an empty array which will error later), so just skipping it for now.
+        #the container pages will still get a few checks below, but those will always evaluate to false.
         unless record.is_a?(Container)
           instances = record_json['instances']
               .reject { |instance| instance['digital_object'] }
