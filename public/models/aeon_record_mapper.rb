@@ -407,14 +407,17 @@ class AeonRecordMapper
         Rails.logger.info("Aeon Fulfillment Plugin") { "Checking \"#{current_uri}\" for Top Container instances..." }
         Rails.logger.debug("Aeon Fulfillment Plugin") { "#{record_json.to_json}" }
 
-        if record_json['instances'].present?
+        # Inheriting containers doesn't work with our other plugin (it gets passed an
+        # empty array that will cause an error later), so just skipping those for now.
+        # TODO: Figure out why the other plugin does not work with this new feature
+        
+        # The container pages will still get a few checks below, but those will always
+        # evaluate to false.
+        unless record.is_a?(Container)
           instances = record_json['instances']
               .reject { |instance| instance['digital_object'] }
-        end
-
-        if instances.try(:any?)
-            Rails.logger.info("Aeon Fulfillment Plugin") { "Top Container instances found" }
-            return instances
+          Rails.logger.info("Aeon Fulfillment Plugin") { "Top Container instances found" }
+          return instances
         end
 
         parent_uri = ''
