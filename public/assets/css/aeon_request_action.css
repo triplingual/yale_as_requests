@@ -16,3 +16,16 @@
   white-space: nowrap;
   width: 1px;
 }
+
+.aeon_request_selector_modal {
+  text-align: left;
+}
+
+.aeon_request_type_wrapper {
+  margin: 2em auto;
+  width: 25em;
+}
+
+button.aeon_request_type_selector {
+  width: 100%;
+}

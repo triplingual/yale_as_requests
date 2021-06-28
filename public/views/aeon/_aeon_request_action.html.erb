@@ -2,6 +2,22 @@
 Rails.logger.info("Aeon Fulfillment Plugin") { "Initializing Plugin..." }
 
 mapper = AeonRecordMapper.mapper_for(record)
+
+request_types = [
+  {
+    :request_type => 'reading_room',
+    :button_label => I18n.t('plugins.aeon_fulfillment.request_reading_room_button'),
+    :button_help_text => I18n.t('plugins.aeon_fulfillment.request_reading_room_help_text'),
+    :extra_params => {'RequestType' => 'Loan'}
+  },
+  {
+    :request_type => 'digitization',
+    :button_label => I18n.t('plugins.aeon_fulfillment.request_digital_copy_button'),
+    :button_help_text => I18n.t('plugins.aeon_fulfillment.request_digital_copy_help_text'),
+    :extra_params => {'RequestType' => 'Copy'}
+  },
+]
+
 %>
 
 <%= javascript_include_tag "#{@base_url}/assets/js/aeon_request_action.js" %>
@@ -9,23 +25,55 @@ mapper = AeonRecordMapper.mapper_for(record)
 <% unless mapper.hide_button? %>
 
   <% if mapper.show_action? %>
-    <%= form_tag "#{mapper.repo_settings[:aeon_web_url]}?action=11&type=200", :id => 'aeon_request_sub', :target => (mapper.repo_settings.fetch(:request_in_new_tab, false) ? 'aeon_request' : '_self') do |f| %>
-      <% mapper.map.each do |name, value| %>
-        <% if name.casecmp('requests').zero? %>
-          <% value.each do |request| %>
-            <% request.each do |request_param, request_value| %>
-              <input type='hidden' name='<%= request_param %>' value='<%= strip_tags(request_value.to_s) %>' />
-            <% end %>
-          <% end %>
-        <% else %>
-          <input type='hidden' name='<%= name %>' value='<%= strip_tags(value.to_s) %>' />
-        <% end %>
-      <% end %>
+    <div class="modal fade aeon_request_selector_modal" id="aeon_request_selector_modal" tabindex="-1" role="dialog" aria-labelledby="aeon_request_selector_modalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+            <h3 class="modal-title" id="aeon_request_selector_modalLabel"><%= t('plugins.aeon_fulfillment.choose_request_type') %></h3>
+          </div>
+          <div class="modal-body">
+            <% request_types.each do |request_type| %>
+              <%= form_tag "#{mapper.repo_settings[:aeon_web_url]}?action=11&type=200", :id => 'aeon_request_sub', :target => (mapper.repo_settings.fetch(:request_in_new_tab, false) ? 'aeon_request' : '_self') do |f| %>
+                <% request_type.fetch(:extra_params, []).each do |name, value| %>
+                  <input type='hidden' name='<%= name %>' value='<%= value %>' />
+                <% end %>
+                <% mapper.map.each do |name, value| %>
+                  <% if name.casecmp('requests').zero? %>
+                    <% value.each do |request| %>
+                      <% request.each do |request_param, request_value| %>
+                        <input type='hidden' name='<%= request_param %>' value='<%= strip_tags(request_value.to_s) %>' />
+                      <% end %>
+                    <% end %>
+                  <% else %>
+                    <input type='hidden' name='<%= name %>' value='<%= strip_tags(value.to_s) %>' />
+                  <% end %>
+                <% end %>
 
-      <button type="submit" class="btn page_action request btn-default" title="<%= t('plugins.aeon_fulfillment.request_button_label') %>">
-        <i class="<%= t('plugins.aeon_fulfillment.request_button_icon') %>"></i><br/><%= t('plugins.aeon_fulfillment.request_button_label') %>
-      </button>
-    <% end %>
+                <div class="aeon_request_type_wrapper">
+                  <div>
+                    <button type="submit" class="btn btn-primary aeon_request_type_selector" title="<%= request_type.fetch(:button_label) %>">
+                      <%= request_type.fetch(:button_label) %>
+                    </button>
+                  </div>
+                  <div>
+                    <small class="text-muted"><%= request_type.fetch(:button_help_text, '') %></small>
+                  </div>
+                </div>
+
+              <% end %>
+            <% end %>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" id="aeon_request_button" class="btn page_action request btn-default" title="<%= t('plugins.aeon_fulfillment.request_button_label') %>">
+      <i class="<%= t('plugins.aeon_fulfillment.request_button_icon') %>"></i><br/><%= t('plugins.aeon_fulfillment.request_button_label') %>
+    </button>
 
   <% else %>
 
@@ -40,6 +88,15 @@ mapper = AeonRecordMapper.mapper_for(record)
 
 <% end %>
 
+<script>
+  $('#aeon_request_button').on('click', function() {
+    $('#aeon_request_selector_modal').modal('show');
+
+    $('#aeon_request_selector_modal').on('click', 'button', function() {
+      $('#aeon_request_selector_modal').modal('hide');
+    });
+  });
+</script>
 <%
   Rails.logger.info("Aeon Fulfillment Plugin") { "Finished initializing plugin." }
 %>

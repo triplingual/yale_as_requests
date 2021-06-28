@@ -4,3 +4,8 @@ en:
       request_button_icon: fa fa-external-link fa-external-link-alt fa-3x
       request_button_label: Aeon Request
       requesting_disabled: Requesting is not available for this record.
+      choose_request_type: Choose a request type
+      request_reading_room_button: Request for use in reading room
+      request_reading_room_help_text: Have this item delivered to the reading room.
+      request_digital_copy_button: Request a digital copy
+      request_digital_copy_help_text: Obtain a digitized version of this item.
