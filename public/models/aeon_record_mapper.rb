@@ -177,7 +177,7 @@ class AeonRecordMapper
 
 
     # Pulls data from the contained record
-    def map
+    def map(request_type = 'reading_room')
         mappings = {}
 
         mappings = mappings
