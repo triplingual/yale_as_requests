@@ -1,0 +1,51 @@
+<%
+
+request_types = [
+  {
+    :aeon_uri => "#{mapper.repo_settings[:aeon_web_url]}?action=11&type=200",
+    :request_type => 'reading_room',
+    :button_label => I18n.t('plugins.aeon_fulfillment.request_reading_room_button'),
+    :button_help_text => I18n.t('plugins.aeon_fulfillment.request_reading_room_help_text'),
+    :extra_params => {'RequestType' => 'Loan'}
+  },
+  {
+    :aeon_uri => "#{mapper.repo_settings[:aeon_web_url]}?action=10&form=23",
+    :request_type => 'digitization',
+    :button_label => I18n.t('plugins.aeon_fulfillment.request_digital_copy_button'),
+    :button_help_text => I18n.t('plugins.aeon_fulfillment.request_digital_copy_help_text'),
+    :extra_params => {'RequestType' => 'Copy', 'DocumentType' => 'Default'}
+  },
+]
+
+%>
+
+
+<% request_types.each do |request_type| %>
+  <%= form_tag request_type.fetch(:aeon_uri), :id => 'aeon_request_sub', :target => (mapper.repo_settings.fetch(:request_in_new_tab, false) ? 'aeon_request' : '_self') do |f| %>
+    <% request_type.fetch(:extra_params, []).each do |name, value| %>
+      <input type='hidden' name='<%= name %>' value='<%= value %>' />
+    <% end %>
+    <% mapper.map.each do |name, value| %>
+      <% if name.casecmp('requests').zero? %>
+        <% value.each do |request| %>
+          <% request.each do |request_param, request_value| %>
+            <input type='hidden' name='<%= request_param %>' value='<%= strip_tags(request_value.to_s) %>' />
+          <% end %>
+        <% end %>
+      <% else %>
+        <input type='hidden' name='<%= name %>' value='<%= strip_tags(value.to_s) %>' />
+      <% end %>
+    <% end %>
+
+    <div class="aeon_request_type_wrapper">
+      <div>
+        <button type="submit" class="btn btn-primary aeon_request_type_selector" title="<%= request_type.fetch(:button_label) %>">
+          <%= request_type.fetch(:button_label) %>
+        </button>
+      </div>
+      <div>
+        <small class="text-muted"><%= request_type.fetch(:button_help_text, '') %></small>
+      </div>
+    </div>
+  <% end %>
+<% end %>

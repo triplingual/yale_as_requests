@@ -1,3 +1,5 @@
+Plugins::extend_aspace_routes(File.join(File.dirname(__FILE__), "routes.rb"))
+
 ## Register our custom page action
 record_types = AppConfig.has_key?(:aeon_fulfillment_record_types) ? AppConfig[:aeon_fulfillment_record_types]
                                                                   : ['archival_object', 'accession', 'resource']
