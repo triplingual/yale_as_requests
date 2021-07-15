@@ -23,7 +23,7 @@ class AeonRecordMapper
         if @@mappers.has_key?(record.class)
             @@mappers[record.class].new(record)
         else
-            Rails.logger.info("Aeon Fulfillment Plugin") { "This ArchivesSpace object type (#{record.class}) is not supported by this plugin." }
+            Rails.logger.error("Aeon Fulfillment Plugin") { "This ArchivesSpace object type (#{record.class}) is not supported by this plugin." }
             raise
         end
     end
@@ -52,7 +52,7 @@ class AeonRecordMapper
                     is_whitelist = false
                     fields = []
 
-                    Rails.logger.debug("Aeon Fulfillment Plugin") { "Pulling in all user defined fields" }
+                    Rails.logger.debug("Aeon Fulfillment Plugin") { "Pulling in all user defined fields" } if AeonRecordMapper.debug_mode?
                 else
                     if udf_setting.is_a?(Array)
                         is_whitelist = true
@@ -64,8 +64,8 @@ class AeonRecordMapper
                     end
 
                     list_type_description = is_whitelist ? 'Whitelist' : 'Blacklist'
-                    Rails.logger.debug("Aeon Fulfillment Plugin") { ":allow_user_defined_fields is a #{list_type_description}" }
-                    Rails.logger.debug("Aeon Fulfillment Plugin") { "User Defined Field #{list_type_description}: #{fields}" }
+                    Rails.logger.debug("Aeon Fulfillment Plugin") { ":allow_user_defined_fields is a #{list_type_description}" } if AeonRecordMapper.debug_mode?
+                    Rails.logger.debug("Aeon Fulfillment Plugin") { "User Defined Field #{list_type_description}: #{fields}" } if AeonRecordMapper.debug_mode?
                 end
 
                 user_defined_fields.each do |field_name, value|
@@ -122,8 +122,8 @@ class AeonRecordMapper
             end
 
             list_type_description = is_whitelist ? 'Whitelist' : 'Blacklist'
-            Rails.logger.debug("Aeon Fulfillment Plugin") { ":requestable_archival_record_levels is a #{list_type_description}" }
-            Rails.logger.debug("Aeon Fulfillment Plugin") { "Record Level #{list_type_description}: #{levels}" }
+            Rails.logger.debug("Aeon Fulfillment Plugin") { ":requestable_archival_record_levels is a #{list_type_description}" } if AeonRecordMapper.debug_mode?
+            Rails.logger.debug("Aeon Fulfillment Plugin") { "Record Level #{list_type_description}: #{levels}" } if AeonRecordMapper.debug_mode?
 
             # Determine the level of the current record.
             level = ''
@@ -131,7 +131,7 @@ class AeonRecordMapper
                 level = self.record.json['level'] || ''
             end
 
-            Rails.logger.debug("Aeon Fulfillment Plugin") { "Record's Level: \"#{level}\"" }
+            Rails.logger.debug("Aeon Fulfillment Plugin") { "Record's Level: \"#{level}\"" } if AeonRecordMapper.debug_mode?
 
             # If whitelist, check to see if the list of levels contains the level.
             # Otherwise, check to make sure the level is not in the list.
@@ -144,12 +144,12 @@ class AeonRecordMapper
     # If #show_action? returns false, then the button is shown disabled
     def show_action?
         begin
-            Rails.logger.debug("Aeon Fulfillment Plugin") { "Checking for plugin settings for the repository" }
+            Rails.logger.debug("Aeon Fulfillment Plugin") { "Checking for plugin settings for the repository" } if AeonRecordMapper.debug_mode?
 
             if !self.repo_settings
-                Rails.logger.info("Aeon Fulfillment Plugin") { "Could not find plugin settings for the repository: \"#{self.repo_code}\"." }
+                Rails.logger.info("Aeon Fulfillment Plugin") { "Could not find plugin settings for the repository: \"#{self.repo_code}\"." } if AeonRecordMapper.debug_mode?
             else
-                Rails.logger.debug("Aeon Fulfillment Plugin") { "Checking for top containers" }
+                Rails.logger.debug("Aeon Fulfillment Plugin") { "Checking for top containers" } if AeonRecordMapper.debug_mode?
 
                 has_top_container = record.is_a?(Container) || self.container_instances.any?
 
@@ -159,8 +159,8 @@ class AeonRecordMapper
                 # then don't require containers
                 only_top_containers = self.repo_settings.fetch(:hide_button_for_accessions, false) if record.is_a?(Accession)
 
-                Rails.logger.debug("Aeon Fulfillment Plugin") { "Containers found?    #{has_top_container}" }
-                Rails.logger.debug("Aeon Fulfillment Plugin") { "only_top_containers? #{only_top_containers}" }
+                Rails.logger.debug("Aeon Fulfillment Plugin") { "Containers found?    #{has_top_container}" } if AeonRecordMapper.debug_mode?
+                Rails.logger.debug("Aeon Fulfillment Plugin") { "only_top_containers? #{only_top_containers}" } if AeonRecordMapper.debug_mode?
 
                 return (has_top_container || !only_top_containers)
             end
@@ -229,7 +229,7 @@ class AeonRecordMapper
     def record_fields
         mappings = {}
 
-        Rails.logger.debug("Aeon Fulfillment Plugin") { "Mapping Record: #{self.record}" }
+        Rails.logger.debug("Aeon Fulfillment Plugin") { "Mapping Record: #{self.record}" } if AeonRecordMapper.debug_mode?
 
         mappings['identifier'] = self.record.identifier || self.record['identifier']
         mappings['publish'] = self.record['publish']
@@ -281,7 +281,7 @@ class AeonRecordMapper
         json = self.record.json
         return mappings unless json
 
-        Rails.logger.debug("Aeon Fulfillment Plugin") { "Mapping Record JSON: #{json}" }
+        Rails.logger.debug("Aeon Fulfillment Plugin") { "Mapping Record JSON: #{json}" } if AeonRecordMapper.debug_mode?
 
         mappings['language'] = json['language']
 
@@ -404,8 +404,8 @@ class AeonRecordMapper
 
         current_uri = record_json['uri']
 
-        Rails.logger.info("Aeon Fulfillment Plugin") { "Checking \"#{current_uri}\" for Top Container instances..." }
-        Rails.logger.debug("Aeon Fulfillment Plugin") { "#{record_json.to_json}" }
+        Rails.logger.info("Aeon Fulfillment Plugin") { "Checking \"#{current_uri}\" for Top Container instances..." } if AeonRecordMapper.debug_mode?
+        Rails.logger.debug("Aeon Fulfillment Plugin") { "#{record_json.to_json}" } if AeonRecordMapper.debug_mode?
 
         # Inheriting containers doesn't work with our other plugin (it gets passed an
         # empty array that will cause an error later), so just skipping those for now.
@@ -416,7 +416,7 @@ class AeonRecordMapper
         unless record.is_a?(Container)
           instances = record_json['instances']
               .reject { |instance| instance['digital_object'] }
-          Rails.logger.info("Aeon Fulfillment Plugin") { "Top Container instances found" }
+          Rails.logger.info("Aeon Fulfillment Plugin") { "Top Container instances found" } if AeonRecordMapper.debug_mode?
           return instances
         end
 
@@ -437,9 +437,13 @@ class AeonRecordMapper
             return find_container_instances(parent_json)
         end
 
-        Rails.logger.debug("Aeon Fulfillment Plugin") { "No Top Container instances found." }
+        Rails.logger.debug("Aeon Fulfillment Plugin") { "No Top Container instances found." } if AeonRecordMapper.debug_mode?
 
         []
+    end
+
+    def self.debug_mode?
+        AppConfig.has_key?(:aeon_fulfillment_debug) && AppConfig[:aeon_fulfillment_debug]
     end
 
     protected :json_fields, :record_fields, :system_information,

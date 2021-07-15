@@ -1,5 +1,5 @@
 <%
-Rails.logger.info("Aeon Fulfillment Plugin") { "Initializing Plugin..." }
+Rails.logger.info("Aeon Fulfillment Plugin") { "Initializing Plugin..." } if AeonRecordMapper.debug_mode?
 
 mapper = AeonRecordMapper.mapper_for(record)
 
@@ -45,5 +45,5 @@ mapper = AeonRecordMapper.mapper_for(record)
 <% end %>
 
 <%
-  Rails.logger.info("Aeon Fulfillment Plugin") { "Finished initializing plugin." }
+  Rails.logger.info("Aeon Fulfillment Plugin") { "Finished initializing plugin." } if AeonRecordMapper.debug_mode?
 %>
