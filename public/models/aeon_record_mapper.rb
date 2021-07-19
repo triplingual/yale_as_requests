@@ -4,11 +4,21 @@ class AeonRecordMapper
 
     @@mappers = {}
 
-    attr_reader :record, :container_instances
+    attr_reader :record, :container_instances, :request_type
 
     def initialize(record)
         @record = record
         @container_instances = find_container_instances(record['json'] || {})
+        @requested_instance_indexes = nil
+        @request_type = 'reading_room'
+    end
+
+    def requested_instance_indexes=(requested_instance_indexes)
+        @requested_instance_indexes = requested_instance_indexes
+    end
+
+    def request_type=(request_type)
+        @request_type = request_type
     end
 
     def archivesspace
@@ -177,7 +187,7 @@ class AeonRecordMapper
 
 
     # Pulls data from the contained record
-    def map(request_type = 'reading_room')
+    def map
         mappings = {}
 
         mappings = mappings
@@ -323,6 +333,8 @@ class AeonRecordMapper
         mappings['requests'] = instances
             .each_with_index
             .map { |instance, i|
+                next if @requested_instance_indexes && @requested_instance_indexes.include?(i)
+
                 request = {}
 
                 instance_count = i + 1
@@ -391,7 +403,7 @@ class AeonRecordMapper
                 end
 
                 request
-            }
+            }.compact
 
         mappings
     end

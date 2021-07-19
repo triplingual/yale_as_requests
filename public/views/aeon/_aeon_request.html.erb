@@ -1,0 +1,16 @@
+<%= form_tag request_type_config.fetch(:aeon_uri), :id => 'aeon_request_sub', :target => (mapper.repo_settings.fetch(:request_in_new_tab, false) ? 'aeon_request' : '_self') do |f| %>
+  <% request_type_config.fetch(:extra_params, []).each do |name, value| %>
+    <input type='hidden' name='<%= name %>' value='<%= value %>' />
+  <% end %>
+  <% mapper.map.each do |name, value| %>
+    <% if name.casecmp('requests').zero? %>
+      <% value.each_with_index do |request, request_index| %>
+        <% request.each do |request_param, request_value| %>
+          <input type='hidden' name='<%= request_param %>' value='<%= strip_tags(request_value.to_s) %>' />
+        <% end %>
+      <% end %>
+    <% else %>
+      <input type='hidden' name='<%= name %>' value='<%= strip_tags(value.to_s) %>' />
+    <% end %>
+  <% end %>
+<% end %>
