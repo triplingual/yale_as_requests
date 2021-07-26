@@ -29,3 +29,7 @@
 button.aeon_request_type_selector {
   width: 100%;
 }
+
+#aeon_request_selector_modal table label {
+  margin: 0;
+}

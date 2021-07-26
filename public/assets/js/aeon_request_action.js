@@ -11,9 +11,9 @@
         self.$form.on('click', '#aeonToggleAll', function() {
             const checkIt = $(this).is(':checked');
             if (checkIt) {
-                self.$form.find('table tbody :checkbox:not(:checked)').trigger('click');
+                $(this).closest('table').find('tbody :checkbox:not(:checked)').trigger('click');
             } else {
-                self.$form.find('table tbody :checkbox:checked').trigger('click');
+                $(this).closest('table').find('tbody :checkbox:checked').trigger('click');
             }
         });
 
@@ -76,16 +76,12 @@ $(document).ready(function() {
             data: {
                 uri: $(this).data('uri'),
             },
-            success: function(html) {
+            success: function (html) {
                 $('#aeon_request_selector_modal .modal-body').html(html);
                 new AeonRequestForm($('#aeon_request_selector_modal .modal-body form'));
             },
-            error: function(jqXHR, textStatus, errorThrown) {
+            error: function (jqXHR, textStatus, errorThrown) {
                 $('#aeon_request_selector_modal .modal-body').html(errorThrown);
-
-                if (jqXHR.responseText) {
-                    $('#aeon_request_selector_modal .modal-body').append('<div>' + jqXHR.responseText + '</div>');
-                }
             }
         });
     });

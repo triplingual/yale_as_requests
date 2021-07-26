@@ -4,6 +4,9 @@
 
   <% if series %>
     <h4><%= series %></h4>
+    <h5><%= record.display_string %></h5>
+  <% else %>
+    <h4><%= record.display_string %></h4>
   <% end %>
 
   <% mapper = AeonRecordMapper.mapper_for(record) %>

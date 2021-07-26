@@ -11,30 +11,63 @@
         <%= select_tag :request_type, options_for_select(request_types.map{|rt|  [rt.fetch(:button_label),  rt.fetch(:request_type)] }), :class => 'form-control' %>
       </p>
 
-      <table class="table table-bordered table-condensed table-striped">
-        <thead>
+      <% unless mapper.container_instances.empty? %>
+        <table class="table table-bordered table-condensed table-striped">
+          <thead>
+            <tr>
+              <th style="width: 20px">
+                <label><input type="checkbox" id="aeonToggleAll"> <span class="sr-only">Toggle All Checkboxes</span></label>
+              </th>
+              <th>
+                Physical Storage
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <% mapper.container_instances.sort_by{|instance| instance['_index']}.each do |instance| %>
+              <tr>
+                <td>
+                  <%= check_box_tag 'instance_idx[]', instance['_index'], false, :id => "aeon_instance_idx_#{instance['_index']}", :class => 'aeon_instance_ckbx' %>
+                </td>
+                <td>
+                  <% if instance['digital_object'] %>
+                    <i class="fa fa-th" title="Record is a digital object"></i>
+                  <% end %>
+                  <%= label_tag "aeon_instance_idx_#{instance['_index']}", record.build_instance_display_string(instance) %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% end %>
+
+      <% unless mapper.digital_object_instances.empty? %>
+        <table class="table table-bordered table-condensed table-striped">
+          <thead>
           <tr>
             <th style="width: 20px">
               <label><input type="checkbox" id="aeonToggleAll"> <span class="sr-only">Toggle All Checkboxes</span></label>
             </th>
             <th>
-              Container Details
+              Digital Material
             </th>
           </tr>
-        </thead>
-        <tbody>
-          <% mapper.container_instances.each_with_index do |instance, index| %>
+          </thead>
+          <tbody>
+          <% mapper.digital_object_instances.sort_by{|instance| instance['_index']}.each do |instance| %>
             <tr>
               <td>
-                <%= check_box_tag 'instance_idx[]', index, false, :id => "aeon_instance_idx_#{index}", :class => 'aeon_instance_ckbx' %>
+                <%= check_box_tag 'instance_idx[]', instance['_index'], false, :id => "aeon_instance_idx_#{instance['_index']}", :class => 'aeon_instance_ckbx' %>
               </td>
               <td>
-                <%= label_tag "aeon_instance_idx_#{index}", record.build_instance_display_string(instance) %>
+                <%= label_tag "aeon_instance_idx_#{instance['_index']}", record.build_instance_display_string(instance) %>
+                <i class="fa fa-th" title="Record is a digital object"></i>
               </td>
             </tr>
           <% end %>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      <% end %>
     <% end %>
 
     <p>
