@@ -15,7 +15,7 @@ class AeonRequestController < ApplicationController
     render partial: 'aeon/aeon_request_popup', locals: {
       record: record,
       mapper: mapper,
-      request_types: aeon_request_types(mapper),
+      request_types: AeonRequestController.aeon_request_types(mapper),
     }
   end
 
@@ -32,7 +32,7 @@ class AeonRequestController < ApplicationController
     return render status: 400, text: 'Action not supported for record' if mapper.hide_button?
     return render status: 400, text: 'Action not available for record' unless mapper.show_action?
 
-    request_type_config = aeon_request_types(mapper).detect{|rt| rt.fetch(:request_type) == params[:request_type]}
+    request_type_config = AeonRequestController.aeon_request_types(mapper).detect{|rt| rt.fetch(:request_type) == params[:request_type]}
 
     return render status: 400, text: "Unknown request type: #{params[:request_type]}" if request_type_config.nil?
 
@@ -46,9 +46,7 @@ class AeonRequestController < ApplicationController
     }
   end
 
-  private
-
-  def aeon_request_types(mapper)
+  def self.aeon_request_types(mapper)
     [
       {
         :aeon_uri => "#{mapper.repo_settings[:aeon_web_url]}?action=11&type=200",
