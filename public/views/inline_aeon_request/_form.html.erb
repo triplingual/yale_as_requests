@@ -1,0 +1,21 @@
+<div>
+
+  <h3><%= resource['title'] %> (<%= (0..3).map{|n| resource["id_#{n}"]}.compact.join('-') %>)</h3>
+
+  <% if series %>
+    <h4><%= series %></h4>
+  <% end %>
+
+  <% mapper = AeonRecordMapper.mapper_for(record) %>
+  <% if mapper.hide_button? || !mapper.show_action? %>
+    <div class="alert alert-warning">Record is not available for request.</div>
+  <% else %>
+    <%= render :partial => 'aeon/aeon_request_popup', :locals => {
+        :record => record,
+        :mapper => mapper,
+        :request_types => AeonRequestController.aeon_request_types(mapper),
+      }
+    %>
+  <% end %>
+
+</div>

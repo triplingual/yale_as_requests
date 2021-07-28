@@ -2,8 +2,9 @@ en:
   plugins:
     aeon_fulfillment:
       request_button_icon: fa fa-external-link fa-external-link-alt fa-3x
-      request_button_label: Aeon Request
-      requesting_disabled: Requesting is not available for this record.
+      request_button_label: Request
+      requesting_disabled: |
+        Requesting not available at this level. Use <strong>Navigate the Collection</strong> to select an item to request.
       choose_request_type: Choose a request type
       request_reading_room_button: Request for use in reading room
       request_reading_room_help_text: Have this item delivered to the reading room.
