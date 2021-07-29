@@ -1,38 +1,44 @@
 <%= form_tag url_for(:controller => :aeon_request, :action => :build) do |f| %>
   <%= hidden_field_tag 'uri', record.uri %>
   <div>
-    <p>
-      <%= label_tag :request_type, "Request Type", :class => 'sr-only' %>
-      <%= select_tag :request_type, options_for_select(request_types.map{|rt|  [rt.fetch(:button_label),  rt.fetch(:request_type)] }), :class => 'form-control' %>
-    </p>
+    <% if mapper.kind_of?(AeonContainerMapper) %>
+      <h3><%= mapper.record.display_string %></li></h3>
+      <p><strong><%= I18n.t('plugins.aeon_fulfillment.request_reading_room_button') %></strong></p>
+      <%= hidden_field_tag 'request_type', 'reading_room' %>
+    <% else %>
+      <p>
+        <%= label_tag :request_type, "Request Type", :class => 'sr-only' %>
+        <%= select_tag :request_type, options_for_select(request_types.map{|rt|  [rt.fetch(:button_label),  rt.fetch(:request_type)] }), :class => 'form-control' %>
+      </p>
 
-    <table class="table table-bordered table-condensed table-striped">
-      <thead>
-        <tr>
-          <th style="width: 20px">
-            <label><input type="checkbox" id="aeonToggleAll"> <span class="sr-only">Toggle All Checkboxes</span></label>
-          </th>
-          <th>
-            Container Details
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <% mapper.container_instances.each_with_index do |instance, index| %>
+      <table class="table table-bordered table-condensed table-striped">
+        <thead>
           <tr>
-            <td>
-              <%= check_box_tag 'instance_idx[]', index, false, :id => "aeon_instance_idx_#{index}", :class => 'aeon_instance_ckbx' %>
-            </td>
-            <td>
-              <%= label_tag "aeon_instance_idx_#{index}", record.build_instance_display_string(instance) %>
-            </td>
+            <th style="width: 20px">
+              <label><input type="checkbox" id="aeonToggleAll"> <span class="sr-only">Toggle All Checkboxes</span></label>
+            </th>
+            <th>
+              Container Details
+            </th>
           </tr>
-        <% end %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <% mapper.container_instances.each_with_index do |instance, index| %>
+            <tr>
+              <td>
+                <%= check_box_tag 'instance_idx[]', index, false, :id => "aeon_instance_idx_#{index}", :class => 'aeon_instance_ckbx' %>
+              </td>
+              <td>
+                <%= label_tag "aeon_instance_idx_#{index}", record.build_instance_display_string(instance) %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
 
     <p>
-      <button type="submit" class="btn btn-primary" id="aeonFormSubmit" disabled>
+      <button type="submit" class="btn btn-primary" id="aeonFormSubmit" <% unless mapper.kind_of?(AeonContainerMapper) %>disabled <% end %>>
         Submit Request
       </button>
     </p>

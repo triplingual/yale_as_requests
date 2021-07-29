@@ -5,7 +5,7 @@ en:
       request_button_label: Request
       requesting_disabled: |
         Requesting not available at this level. Use <strong>Navigate the Collection</strong> to select an item to request.
-      choose_request_type: Choose a request type
+      choose_request_type: Record Request
       request_reading_room_button: Request for use in reading room
       request_reading_room_help_text: Have this item delivered to the reading room.
       request_digital_copy_button: Request a digital copy
