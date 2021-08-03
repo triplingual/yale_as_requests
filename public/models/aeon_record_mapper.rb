@@ -340,7 +340,7 @@ class AeonRecordMapper
         mappings['requests'] = []
 
         instances.each do |instance|
-            next if @requested_instance_indexes && @requested_instance_indexes.include?(instance.fetch('_index'))
+            next if @requested_instance_indexes.nil? || !@requested_instance_indexes.include?(instance.fetch('_index'))
 
             request_count = request_count + 1
 
@@ -348,7 +348,7 @@ class AeonRecordMapper
         end
 
         digital_objects.each do |instance|
-            next if @requested_instance_indexes && @requested_instance_indexes.include?(instance.fetch('_index'))
+            next if @requested_instance_indexes.nil? || !@requested_instance_indexes.include?(instance.fetch('_index'))
 
             request_count = request_count + 1
 
