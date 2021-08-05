@@ -25,7 +25,7 @@ class YaleAeonUtils
 
 
   def self.active_restrictions(active_restrictions)
-    active_restrictions.map{|ar|
+    ASUtils.wrap(active_restrictions).map{|ar|
       if ar['restriction_note_type'] == 'accessrestrict' && !ar['local_access_restriction_type'].empty?
         ar['local_access_restriction_type'].join(', ')
       else
