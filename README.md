@@ -9,6 +9,30 @@ This is a fork from the original Atlas developed plugin 'ArchivesSpace-Aeon-Fulf
 Yale has decided to adopt this version, so now development will continue here. To that end we
 have merged the 'yale_aeon_mappings' plugin into this one to simplify future development.
 
+
+## Configuration
+
+In addition to the configuration options described below, this version introduces the following.
+
+`:requests_permitted_for_digital_object_instances` - boolean in repo config (default false)
+Set to true to enable digital object instance requests for a repository.
+
+Example
+```ruby
+AppConfig[:aeon_fulfillment] = {
+    "repo_code" => {
+        ...
+        :requests_permitted_for_digital_object_instances => true,
+        ...
+    },
+```
+
+`AppConfig[:aeon_fulfillment_debug]` - boolean (default false)
+Set to true to enable detailed debugging information in the logs
+
+
+## Note
+
 The remainder of this README is from the original plugin. It remains valid and useful, though
 some of the naming etc may have changed.
 
