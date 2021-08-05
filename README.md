@@ -1,8 +1,20 @@
-# ArchivesSpace Request Fulfillment via Aeon
+# Yale ArchivesSpace Requests
 
-**Version:** 20190529
+This is an ArchivesSpace plugin that implements Yale's public requesting workflows.
 
-**Last Updated:** May 29, 2019
+Yale uses Aeon to manage requests. This plugin maps ArchivesSpace records to Aeon request
+structures and sends the requests to Aeon when the public user clicks the request button.
+
+This is a fork from the original Atlas developed plugin 'ArchivesSpace-Aeon-Fulfillment-Plugin'.
+Yale has decided to adopt this version, so now development will continue here. To that end we
+have merged the 'yale_aeon_mappings' plugin into this one to simplify future development.
+
+The remainder of this README is from the original plugin. It remains valid and useful, though
+some of the naming etc may have changed.
+
+
+-------
+
 
 
 ## Table of Contents
