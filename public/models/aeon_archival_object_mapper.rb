@@ -301,6 +301,8 @@ class AeonArchivalObjectMapper < AeonRecordMapper
             creator = ao.json['linked_agents'].select {|a| a['role'] == 'creator'}.first
             result['ItemAuthor'] = creator['_resolved']['title'] if creator
 
+            result['ItemInfo8'] = YaleAeonUtils.active_restrictions(ao.json['active_restrictions'])
+
             result
         else
             raise "Unknown request type: #{request_type}"
