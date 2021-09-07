@@ -271,6 +271,13 @@ class AeonArchivalObjectMapper < AeonRecordMapper
                 instance.fetch('instance_type') != 'digital_object'
             }
 
+
+            # ReferenceNumber (top_container barcode)
+            result['ReferenceNumber'] = selected_instances.map {|instance_idx|
+                instance = ao.json.fetch('instances', []).fetch(instance_idx)
+                instance.dig('sub_container', 'top_container', '_resolved', 'barcode')
+            }.compact.join('; ')
+
             selected_instance_labels = selected_instances.map {|instance_idx|
                 instance = ao.json.fetch('instances', []).fetch(instance_idx)
                 top_container_display_string = instance.dig('sub_container', 'top_container', '_resolved', 'display_string')
@@ -287,7 +294,7 @@ class AeonArchivalObjectMapper < AeonRecordMapper
                 label_parts.compact.join(" > ")
             }.compact
 
-            result['ItemVolume'] = selected_instance_labels.join('; ')
+            result['ItemVolume'] = selected_instance_labels.map {|s| s.gsub(/:.*/, '')}.join('; ')
 
             result['ItemTitle'] = clean_for_aeon(ao.display_string)
 
