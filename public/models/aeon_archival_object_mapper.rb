@@ -54,9 +54,7 @@ class AeonArchivalObjectMapper < AeonRecordMapper
         mappings['ItemAuthor'] = creator['_resolved']['title'] if creator
 
         # ItemInfo5 (access restriction notes)
-        mappings['ItemInfo5'] = json['notes'].select {|n| n['type'] == 'accessrestrict'}
-                                           .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
-                                           .join(' ')
+        mappings['ItemInfo5'] = YaleAeonUtils.access_restrictions_content(json['notes'])
 
         # ItemInfo6 (use_restrictions_note)
         mappings['ItemInfo6'] = json['notes'].select {|n| n['type'] == 'userestrict'}
@@ -68,7 +66,7 @@ class AeonArchivalObjectMapper < AeonRecordMapper
                                              .map {|e| "#{e['number']} #{e['extent_type']}"}.join('; ')
 
         # ItemInfo8 (access restriction types)
-        mappings['ItemInfo8'] = YaleAeonUtils.active_restrictions(json['active_restrictions'])
+        mappings['ItemInfo8'] = YaleAeonUtils.local_access_restrictions(json['notes'])
 
 
         # The remainder are per request fields
@@ -301,7 +299,9 @@ class AeonArchivalObjectMapper < AeonRecordMapper
             creator = ao.json['linked_agents'].select {|a| a['role'] == 'creator'}.first
             result['ItemAuthor'] = creator['_resolved']['title'] if creator
 
-            result['ItemInfo8'] = YaleAeonUtils.active_restrictions(ao.json['active_restrictions'])
+            result['ItemInfo5'] = YaleAeonUtils.access_restrictions_content(ao.json['notes'])
+
+            result['ItemInfo8'] = YaleAeonUtils.local_access_restrictions(ao.json['notes'])
 
             result
         else

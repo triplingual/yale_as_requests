@@ -24,14 +24,16 @@ class YaleAeonUtils
   end
 
 
-  def self.active_restrictions(active_restrictions)
-    ASUtils.wrap(active_restrictions).map{|ar|
-      if ar['restriction_note_type'] == 'accessrestrict' && !ar['local_access_restriction_type'].empty?
-        ar['local_access_restriction_type'].join(', ')
-      else
-        [ar['begin'], ar['end']].compact.join(' - ')
-      end
-    }.join('; ')
+  def self.local_access_restrictions(notes)
+    notes.select {|n| n['type'] == 'accessrestrict' && n.has_key?('rights_restriction')}
+         .map {|n| n['rights_restriction']['local_access_restriction_type']}
+         .flatten.uniq.join(' ')
   end
 
+
+  def self.access_restrictions_content(notes)
+    notes.select {|n| n['type'] == 'accessrestrict'}
+         .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
+         .join(' ')
+  end
 end

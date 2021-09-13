@@ -50,12 +50,10 @@ class AeonContainerMapper < AeonRecordMapper
       end
 
       # Trying to get those access notes (mdc)
-      mappings['ItemInfo5'] = json['notes'].select {|n| n['type'] == 'accessrestrict'}
-                                         .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
-                                         .join(' ')
+      mappings['ItemInfo5'] = YaleAeonUtils.access_restrictions_content(json['notes'])
 
       # ItemInfo8 (access restriction types)
-      mappings['ItemInfo8'] = YaleAeonUtils.active_restrictions(json['active_restrictions'])
+      mappings['ItemInfo8'] = YaleAeonUtils.local_access_restrictions(json['notes'])
 
       #if we decide to repeat the title so that it's always in a consistent place.
       mappings['ItemInfo12'] = mappings['collection_title']
