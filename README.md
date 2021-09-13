@@ -14,18 +14,22 @@ have merged the 'yale_aeon_mappings' plugin into this one to simplify future dev
 
 In addition to the configuration options described below, this version introduces the following.
 
-`:requests_permitted_for_digital_object_instances` - boolean in repo config (default false)
-Set to true to enable digital object instance requests for a repository.
+`:requests_permitted_for_born_digital` - boolean in repo config (default false)
+Set to true to enable repository requests for born-digital archival objects (with a local access restriction type of `BornDigital`).
 
 Example
 ```ruby
 AppConfig[:aeon_fulfillment] = {
     "repo_code" => {
         ...
-        :requests_permitted_for_digital_object_instances => true,
+        :requests_permitted_for_born_digital => true,
         ...
     },
 ```
+
+`:disable_digital_copy_request_for_access_restriction_types` - array of strings (default empty) -- Include any local access restriction types that will disable the digital copy request option for a particular record.
+
+`:disable_reading_room_request_for_access_restriction_types` - array of strings (default empty) -- Include any local access restriction types that will disable the reading room request option for a particular record.
 
 `AppConfig[:aeon_fulfillment_debug]` - boolean (default false)
 Set to true to enable detailed debugging information in the logs

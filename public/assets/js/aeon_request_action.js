@@ -8,13 +8,12 @@
     AeonRequestForm.prototype.init = function() {
         const self = this;
 
-        self.$form.on('click', '#aeonToggleAll', function() {
-            const checkIt = $(this).is(':checked');
-            if (checkIt) {
-                $(this).closest('table').find('tbody :checkbox:not(:checked)').trigger('click');
-            } else {
-                $(this).closest('table').find('tbody :checkbox:checked').trigger('click');
-            }
+        self.$form.on('click', '.aeon_select_all', function() {
+            $('#aeonRequestTable').find('tbody :checkbox:not(:checked)').trigger('click');
+        });
+
+        self.$form.on('click', '.aeon_clear_all', function() {
+            $('#aeonRequestTable').find('tbody :checkbox:checked').trigger('click');
         });
 
         self.$form.on('click', '.aeon_instance_ckbx', function() {
@@ -57,6 +56,10 @@
                 self.$form.find('#aeonFormSubmit').prop('disabled', true);
             }
         });
+
+        if ($('#aeonRequestTable').find('tbody :checkbox').length === 1) {
+            self.$form.find('.aeon_select_all').trigger('click');
+        }
     }
 
     exp.AeonRequestForm = AeonRequestForm;

@@ -6,73 +6,57 @@
       <p><strong><%= I18n.t('plugins.aeon_fulfillment.request_reading_room_button') %></strong></p>
       <%= hidden_field_tag 'request_type', 'reading_room' %>
     <% else %>
-      <p>
-        <%= label_tag :request_type, "Request Type", :class => 'sr-only' %>
-        <%= select_tag :request_type, options_for_select(request_types.map{|rt|  [rt.fetch(:button_label),  rt.fetch(:request_type)] }), :class => 'form-control' %>
+      <p class="well" style="padding: 10px;">
+        <%= label_tag :request_type, "Type of request:", :style => 'font-size: 12px; margin: 0 0 6px 0; color: #666' %>
+        <%= select_tag :request_type, options_for_select(mapper.available_request_types.map{|rt|  [rt.fetch(:button_label),  rt.fetch(:request_type)] }), :class => 'form-control' %>
       </p>
 
-      <% unless mapper.container_instances.empty? %>
-        <table class="table table-bordered table-condensed table-striped">
-          <thead>
+      <div>
+        <a class="btn btn-primary btn-xs acc_button aeon_select_all" role="button"><%= t('plugins.aeon_fulfillment.select_all') %></a>
+        <a class="btn btn-primary btn-xs acc_button aeon_clear_all" role="button"><%= t('plugins.aeon_fulfillment.clear_all') %></a>
+      </div>
+
+      <table class="table table-bordered table-condensed table-striped" id="aeonRequestTable">
+        <thead class="sr-only">
+          <tr>
+            <th>
+              <%= t('plugins.aeon_fulfillment.toggle_column_label') %>
+            </th>
+            <th>
+              <%= t('plugins.aeon_fulfillment.item_column_label') %>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if mapper.born_digital? %>
             <tr>
-              <th style="width: 20px">
-                <label><input type="checkbox" id="aeonToggleAll"> <span class="sr-only">Toggle All Checkboxes</span></label>
-              </th>
-              <th>
-                Physical Storage
-              </th>
+              <td style="width: 20px;">
+                <%= check_box_tag 'born_digital', '1', false, :id => "aeon_born_digital", :class => 'aeon_instance_ckbx' %>
+              </td>
+              <td>
+                <i class="fa fa-th" title="Record is born digital"></i>
+                <%= label_tag 'aeon_born_digital', record.display_string %>
+              </td>
             </tr>
-          </thead>
-          <tbody>
+          <% else %>
             <% mapper.container_instances.sort_by{|instance| instance['_index']}.each do |instance| %>
               <tr>
                 <td>
                   <%= check_box_tag 'instance_idx[]', instance['_index'], false, :id => "aeon_instance_idx_#{instance['_index']}", :class => 'aeon_instance_ckbx' %>
                 </td>
                 <td>
-                  <% if instance['digital_object'] %>
-                    <i class="fa fa-th" title="Record is a digital object"></i>
-                  <% end %>
                   <%= label_tag "aeon_instance_idx_#{instance['_index']}", record.build_instance_display_string(instance) %>
                 </td>
               </tr>
             <% end %>
-          </tbody>
-        </table>
-      <% end %>
-
-      <% unless mapper.digital_object_instances.empty? %>
-        <table class="table table-bordered table-condensed table-striped">
-          <thead>
-          <tr>
-            <th style="width: 20px">
-              <label><input type="checkbox" id="aeonToggleAll"> <span class="sr-only">Toggle All Checkboxes</span></label>
-            </th>
-            <th>
-              Digital Material
-            </th>
-          </tr>
-          </thead>
-          <tbody>
-          <% mapper.digital_object_instances.sort_by{|instance| instance['_index']}.each do |instance| %>
-            <tr>
-              <td>
-                <%= check_box_tag 'instance_idx[]', instance['_index'], false, :id => "aeon_instance_idx_#{instance['_index']}", :class => 'aeon_instance_ckbx' %>
-              </td>
-              <td>
-                <%= label_tag "aeon_instance_idx_#{instance['_index']}", record.build_instance_display_string(instance) %>
-                <i class="fa fa-th" title="Record is a digital object"></i>
-              </td>
-            </tr>
           <% end %>
-          </tbody>
-        </table>
-      <% end %>
+        </tbody>
+      </table>
     <% end %>
 
     <p>
       <button type="submit" class="btn btn-primary" id="aeonFormSubmit" <% unless mapper.kind_of?(AeonContainerMapper) %>disabled <% end %>>
-        Submit Request
+        <%= t('plugins.aeon_fulfillment.submit_request_label') %>
       </button>
     </p>
   </div>

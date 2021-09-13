@@ -4,16 +4,41 @@ class AeonRecordMapper
 
     @@mappers = {}
 
-    attr_reader :record, :container_instances, :request_type, :digital_object_instances
+    attr_reader :record, :container_instances, :request_type
 
     def initialize(record)
         @record = record
         @container_instances = find_container_instances(record['json'] || {})
-        @digital_object_instances = find_digital_object_instances
 
         @requested_instance_indexes = nil
 
         @request_type = 'reading_room'
+    end
+
+    def available_request_types
+        result = []
+
+        unless any_local_access_restriction_type?(repo_settings[:disable_reading_room_request_for_access_restriction_types])
+            result << {
+              :aeon_uri => "#{repo_settings[:aeon_web_url]}?action=11&type=200",
+              :request_type => 'reading_room',
+              :button_label => I18n.t('plugins.aeon_fulfillment.request_reading_room_button'),
+              :button_help_text => I18n.t('plugins.aeon_fulfillment.request_reading_room_help_text'),
+              :extra_params => {'RequestType' => 'Loan'}
+            }
+        end
+
+        unless any_local_access_restriction_type?(repo_settings[:disable_digital_copy_request_for_access_restriction_types])
+            result << {
+              :aeon_uri => "#{repo_settings[:aeon_web_url]}?action=10&form=23",
+              :request_type => 'digitization',
+              :button_label => I18n.t('plugins.aeon_fulfillment.request_digital_copy_button'),
+              :button_help_text => I18n.t('plugins.aeon_fulfillment.request_digital_copy_help_text'),
+              :extra_params => {'RequestType' => 'Copy', 'DocumentType' => 'Default'}
+            }
+        end
+
+        result
     end
 
     def requested_instance_indexes=(indexes)
@@ -101,16 +126,23 @@ class AeonRecordMapper
         return true if self.repo_settings[:hide_request_button]
         return true if self.repo_settings[:hide_button_for_accessions] && record.is_a?(Accession)
 
-        if (types = self.repo_settings[:hide_button_for_access_restriction_types])
-          notes = (record.json['notes'] || []).select {|n| n['type'] == 'accessrestrict' && n.has_key?('rights_restriction')}
-                                              .map {|n| n['rights_restriction']['local_access_restriction_type']}
-                                              .flatten.uniq
-
-          # hide if the record notes have any of the restriction types listed in config
-          return true if (notes - types).length < notes.length
-        end
+        return true if any_local_access_restriction_type?(self.repo_settings[:hide_button_for_access_restriction_types])
+        return true if any_local_access_restriction_type?('NoRequest')
+        return true if available_request_types.empty?
 
         false
+    end
+
+    def any_local_access_restriction_type?(candidate_types)
+        !(ASUtils.wrap(candidate_types) & local_access_restriction_types).empty?
+    end
+
+    def local_access_restriction_types
+        return @local_access_restriction_types if @local_access_restriction_types
+
+        @local_access_restriction_types = (record.json['notes'] || []).select {|n| n['type'] == 'accessrestrict' && n.has_key?('rights_restriction')}
+                                            .map {|n| n['rights_restriction']['local_access_restriction_type']}
+                                            .flatten.uniq
     end
 
     # Determines if the :requestable_archival_record_levels setting is present
@@ -175,7 +207,7 @@ class AeonRecordMapper
                 Rails.logger.debug("Aeon Fulfillment Plugin") { "Containers found?    #{has_top_container}" } if AeonRecordMapper.debug_mode?
                 Rails.logger.debug("Aeon Fulfillment Plugin") { "only_top_containers? #{only_top_containers}" } if AeonRecordMapper.debug_mode?
 
-                return (has_top_container || !only_top_containers) || supports_digital_object_requests?
+                return (has_top_container || !only_top_containers) || supports_born_digital_requests?
             end
 
         rescue Exception => e
@@ -330,14 +362,20 @@ class AeonRecordMapper
         mappings['restrictions_apply'] = json['restrictions_apply']
         mappings['display_string'] = json['display_string']
 
-        instances = self.container_instances
-        digital_objects = self.digital_object_instances
-
-        return mappings if (instances + digital_objects).empty?
-
+        mappings['requests'] = []
         request_count = 0
 
-        mappings['requests'] = []
+        if born_digital?
+            request_count = request_count + 1
+
+            mappings['requests'] << map_born_digital_to_reading_room_request(request_count)
+
+            return mappings
+        end
+
+        instances = self.container_instances
+
+        return mappings if instances.empty?
 
         instances.each do |instance|
             next if @requested_instance_indexes.nil? || !@requested_instance_indexes.include?(instance.fetch('_index'))
@@ -347,29 +385,12 @@ class AeonRecordMapper
             mappings['requests'] << map_container_to_reading_room_request(instance, request_count)
         end
 
-        digital_objects.each do |instance|
-            next if @requested_instance_indexes.nil? || !@requested_instance_indexes.include?(instance.fetch('_index'))
-
-            request_count = request_count + 1
-
-            mappings['requests'] << map_digital_instance_to_reading_room_request(instance, request_count)
-        end
-
         mappings
     end
 
-    def map_digital_instance_to_reading_room_request(instance, request_number)
+    def map_born_digital_to_reading_room_request(request_number)
         request = {}
-
         request['Request'] = "#{request_number}"
-
-        request["instance_is_representative_#{request_number}"] = instance['is_representative']
-        request["instance_last_modified_by_#{request_number}"] = instance['last_modified_by']
-        request["instance_instance_type_#{request_number}"] = instance['instance_type']
-        request["instance_created_by_#{request_number}"] = instance['created_by']
-
-        # FIXME! Map the digital object to the reading room request
-
         request
     end
 
@@ -494,24 +515,16 @@ class AeonRecordMapper
         []
     end
 
-    def find_digital_object_instances
-        return [] unless supports_digital_object_requests?
-
-        record['json']['instances']
-          .each_with_index
-          .map { |instance, idx|
-              next unless !!instance.dig('digital_object', '_resolved', 'publish')
-              instance['_index'] = idx
-              instance
-          }.compact
+    def born_digital?
+        record.is_a?(ArchivalObject) && local_access_restriction_types.include?('BornDigital')
     end
 
     def self.debug_mode?
         AppConfig.has_key?(:aeon_fulfillment_debug) && AppConfig[:aeon_fulfillment_debug]
     end
 
-    def supports_digital_object_requests?
-        !!self.repo_settings[:requests_permitted_for_digital_object_instances] && !!record.raw['has_published_digital_objects']
+    def supports_born_digital_requests?
+        !!self.repo_settings[:requests_permitted_for_born_digital] && born_digital?
     end
 
     protected :json_fields, :record_fields, :system_information,

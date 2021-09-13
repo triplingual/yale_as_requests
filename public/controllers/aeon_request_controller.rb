@@ -15,7 +15,6 @@ class AeonRequestController < ApplicationController
     render partial: 'aeon/aeon_request_popup', locals: {
       record: record,
       mapper: mapper,
-      request_types: AeonRequestController.aeon_request_types(mapper),
     }
   end
 
@@ -27,12 +26,13 @@ class AeonRequestController < ApplicationController
     record = archivesspace.get_record(params[:uri], {
       'resolve[]' => ['repository:id', 'resource:id@compact_resource', 'top_container_uri_u_sstr:id', 'linked_instance_uris:id', 'digital_object_uris:id'],
     })
+
     mapper = AeonRecordMapper.mapper_for(record)
 
     return render status: 400, text: 'Action not supported for record' if mapper.hide_button?
     return render status: 400, text: 'Action not available for record' unless mapper.show_action?
 
-    request_type_config = AeonRequestController.aeon_request_types(mapper).detect{|rt| rt.fetch(:request_type) == params[:request_type]}
+    request_type_config = mapper.available_request_types.detect{|rt| rt.fetch(:request_type) == params[:request_type]}
 
     return render status: 400, text: "Unknown request type: #{params[:request_type]}" if request_type_config.nil?
 
@@ -44,24 +44,5 @@ class AeonRequestController < ApplicationController
       mapper: mapper,
       request_type_config: request_type_config,
     }
-  end
-
-  def self.aeon_request_types(mapper)
-    [
-      {
-        :aeon_uri => "#{mapper.repo_settings[:aeon_web_url]}?action=11&type=200",
-        :request_type => 'reading_room',
-        :button_label => I18n.t('plugins.aeon_fulfillment.request_reading_room_button'),
-        :button_help_text => I18n.t('plugins.aeon_fulfillment.request_reading_room_help_text'),
-        :extra_params => {'RequestType' => 'Loan'}
-      },
-      {
-        :aeon_uri => "#{mapper.repo_settings[:aeon_web_url]}?action=10&form=23",
-        :request_type => 'digitization',
-        :button_label => I18n.t('plugins.aeon_fulfillment.request_digital_copy_button'),
-        :button_help_text => I18n.t('plugins.aeon_fulfillment.request_digital_copy_help_text'),
-        :extra_params => {'RequestType' => 'Copy', 'DocumentType' => 'Default'}
-      },
-    ]
   end
 end
