@@ -43,10 +43,10 @@ class AeonArchivalObjectMapper < AeonRecordMapper
         # ItemInfo14 (previously EADNumber) (resource.ref)
         mappings['ItemInfo14'] = json['resource']['ref']
 
-        # ItemCitation (preferred citation note)
-        mappings['ItemCitation'] = json['notes'].select {|n| n['type'] == 'prefercite'}
-                                              .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
-                                              .join(' ')
+        # ItemCitation (preferred citation note - now using #cite exclusively it seems)
+        # mappings['ItemCitation'] = json['notes'].select {|n| n['type'] == 'prefercite'}
+        #                                       .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
+        #                                       .join(' ')
 
         # ItemAuthor (creators)
         # first agent, role='creator'
@@ -215,8 +215,8 @@ class AeonArchivalObjectMapper < AeonRecordMapper
         #mapped['ItemSubTitle'] = strip_mixed_content(self.record.request_item.hierarchy.join(' / '))
         mappings['ItemSubTitle'] = mappings['title']
 
-        # ItemCitation (record.request_item.cite if blank)
-        mappings['ItemCitation'] ||= self.record.request_item.cite
+        # ItemCitation (record.request_item.cite)
+        mappings['ItemCitation'] = self.record.request_item.cite
 
         # ItemDate (record.dates.final_expressions)
         mappings['ItemDate'] = self.record.dates.map {|d| d['final_expression']}.join(', ')
