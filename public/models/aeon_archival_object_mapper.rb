@@ -245,39 +245,35 @@ class AeonArchivalObjectMapper < AeonRecordMapper
             # want one mapping per (ASpaceRecordType, AeonForm).  Currently we only have one
             # mapper per ASpaceRecordType, so we're going to force it to do double duty with
             # this ugly if statement.
+            #
+            # NOTE: self.record in this context is the PUI version of the AO
+            # (/repositories/123/archival_objects/456#pui).
 
             selected_instances = Array(@requested_instance_indexes)
 
-            resource = archivesspace.get_record(self.record.resolved_resource.fetch('uri'))
-            ao = archivesspace.get_record(self.record.json.fetch('uri'))
-
-            ao_series_ref = (ao.json.fetch('ancestors').find {|ancestor| ancestor.fetch('level') == 'series'} || {}).fetch('ref', nil)
-
-            ao_series = if ao_series_ref
-                            archivesspace.get_record(ao_series_ref)
-                        end
-
             result = {}.merge(self.system_information)
 
+            resource = archivesspace.get_record(self.record.json.fetch('resource').fetch('ref'))
             result['CallNumber'] = resource.four_part_identifier.compact.join('-')
 
-            if ao_series
-                result['ItemIssue'] = clean_for_aeon(ao_series.display_string)
-            end
-
-            first_instance = ao.json.fetch('instances', []).find {|instance|
-                instance.fetch('instance_type') != 'digital_object'
-            }
-
+            # Series for all instances get loaded into ItemIssue
+            result['ItemIssue'] =
+                selected_instances.map {|instance_idx|
+                instance = self.record.json.fetch('instances', []).fetch(instance_idx)
+                (instance.dig('sub_container', 'top_container', '_resolved', 'series') || [])
+                    .map {|series| series.fetch('display_string')}
+            }.flatten
+             .uniq
+             .join('; ')
 
             # ReferenceNumber (top_container barcode)
             result['ReferenceNumber'] = selected_instances.map {|instance_idx|
-                instance = ao.json.fetch('instances', []).fetch(instance_idx)
+                instance = self.record.json.fetch('instances', []).fetch(instance_idx)
                 instance.dig('sub_container', 'top_container', '_resolved', 'barcode')
             }.compact.join('; ')
 
             selected_instance_labels = selected_instances.map {|instance_idx|
-                instance = ao.json.fetch('instances', []).fetch(instance_idx)
+                instance = self.record.json.fetch('instances', []).fetch(instance_idx)
                 top_container_display_string = instance.dig('sub_container', 'top_container', '_resolved', 'display_string')
 
                 next if top_container_display_string.nil?
@@ -285,23 +281,27 @@ class AeonArchivalObjectMapper < AeonRecordMapper
                 sub_container = instance.fetch('sub_container')
 
                 label_parts = []
-                label_parts << clean_for_aeon(top_container_display_string)
-                label_parts << clean_for_aeon("Folder %s" % [sub_container['indicator_2']]) if sub_container['type_2'] == 'folder'
-                label_parts << clean_for_aeon("Folder %s" % [sub_container['indicator_3']]) if sub_container['type_3'] == 'folder'
+                label_parts << top_container_display_string
+                label_parts << "Folder %s" % [sub_container['indicator_2']] if sub_container['type_2'] == 'folder'
+                label_parts << "Folder %s" % [sub_container['indicator_3']] if sub_container['type_3'] == 'folder'
 
                 label_parts.compact.join(" > ")
             }.compact
 
             result['ItemVolume'] = selected_instance_labels.map {|s| s.gsub(/:.*/, '')}.join('; ')
 
-            result['ItemTitle'] = clean_for_aeon(ao.display_string)
+            result['ItemTitle'] = self.record.display_string
 
-            creator = ao.json['linked_agents'].select {|a| a['role'] == 'creator'}.first
+            creator = self.record.json['linked_agents'].select {|a| a['role'] == 'creator'}.first
             result['ItemAuthor'] = creator['_resolved']['title'] if creator
 
-            result['ItemInfo5'] = YaleAeonUtils.access_restrictions_content(ao.json['notes'])
+            non_pui_ao = ao = archivesspace.get_record(self.record.json.fetch('uri') + '#pui')
 
-            result['ItemInfo8'] = YaleAeonUtils.local_access_restrictions(ao.json['notes'])
+            result['ItemInfo5'] = YaleAeonUtils.access_restrictions_content(non_pui_ao.json['notes'])
+
+            result['ItemInfo8'] = YaleAeonUtils.local_access_restrictions(non_pui_ao.json['notes'])
+
+            result['ItemDate'] = ASUtils.wrap(non_pui_ao.dates).map {|d| d['final_expression']}.join('; ')
 
             result
         else
@@ -318,15 +318,6 @@ class AeonArchivalObjectMapper < AeonRecordMapper
             from_val = r["#{from}_#{ix}"]
             new_val = yield r["#{from}_#{ix}"] if !from_val.nil? && block_given?
             r["#{to}_#{ix}"] = new_val || from_val
-        end
-    end
-
-    # Hyphens seem to cause certain fields to be blanked on the Aeon side.
-    def clean_for_aeon(s)
-        if s
-            s.gsub(/-/, ' ')
-        else
-            s
         end
     end
 end
