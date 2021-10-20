@@ -8,13 +8,15 @@
     <% else %>
       <p class="well" style="padding: 10px;">
         <%= label_tag :request_type, "Type of request:", :style => 'font-size: 12px; margin: 0 0 6px 0; color: #666' %>
-        <%= select_tag :request_type, options_for_select(mapper.available_request_types.map{|rt|  [rt.fetch(:button_label),  rt.fetch(:request_type)] }), :class => 'form-control' %>
+        <%= select_tag :request_type, options_for_select(mapper.available_request_types.map{|rt|  [rt.fetch(:button_label),  rt.fetch(:request_type)] }, request_type), :class => 'form-control' %>
       </p>
 
-      <div>
-        <a class="btn btn-primary btn-xs acc_button aeon_select_all" role="button"><%= t('plugins.aeon_fulfillment.select_all') %></a>
-        <a class="btn btn-primary btn-xs acc_button aeon_clear_all" role="button"><%= t('plugins.aeon_fulfillment.clear_all') %></a>
-      </div>
+      <% unless request_type == 'digitization' %>
+        <div>
+          <a class="btn btn-primary btn-xs acc_button aeon_select_all" role="button"><%= t('plugins.aeon_fulfillment.select_all') %></a>
+          <a class="btn btn-primary btn-xs acc_button aeon_clear_all" role="button"><%= t('plugins.aeon_fulfillment.clear_all') %></a>
+        </div>
+      <% end %>
 
       <table class="table table-bordered table-condensed table-striped" id="aeonRequestTable">
         <thead class="sr-only">
@@ -31,7 +33,11 @@
           <% if mapper.born_digital? %>
             <tr>
               <td style="width: 20px;">
-                <%= check_box_tag 'born_digital', '1', false, :id => "aeon_born_digital", :class => 'aeon_instance_ckbx' %>
+                <% if request_type == 'digitization' %>
+                  <%= radio_button_tag 'born_digital', '1', false, :id => "aeon_born_digital", :class => 'aeon_requestable_item_input' %>
+                <% else %>
+                  <%= check_box_tag 'born_digital', '1', false, :id => "aeon_born_digital", :class => 'aeon_requestable_item_input' %>
+                <% end %>
               </td>
               <td>
                 <i class="fa fa-th" title="Record is born digital"></i>
@@ -42,7 +48,11 @@
             <% mapper.container_instances.sort_by{|instance| instance['_index']}.each do |instance| %>
               <tr>
                 <td>
-                  <%= check_box_tag 'instance_idx[]', instance['_index'], false, :id => "aeon_instance_idx_#{instance['_index']}", :class => 'aeon_instance_ckbx' %>
+                  <% if request_type == 'digitization' %>
+                    <%= radio_button_tag 'instance_idx[]', instance['_index'], false, :id => "aeon_instance_idx_#{instance['_index']}", :class => 'aeon_requestable_item_input' %>
+                  <% else %>
+                    <%= check_box_tag 'instance_idx[]', instance['_index'], false, :id => "aeon_instance_idx_#{instance['_index']}", :class => 'aeon_requestable_item_input' %>
+                  <% end %>
                 </td>
                 <td>
                   <%= label_tag "aeon_instance_idx_#{instance['_index']}", record.build_instance_display_string(instance) %>

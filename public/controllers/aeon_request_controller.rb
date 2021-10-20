@@ -9,12 +9,19 @@ class AeonRequestController < ApplicationController
     })
     mapper = AeonRecordMapper.mapper_for(record)
 
+    request_type = params[:request_type].to_s.empty? ? nil : params[:request_type]
+
     return render status: 400, text: 'Action not supported for record' if mapper.hide_button?
     return render status: 400, text: 'Action not available for record' unless mapper.show_action?
+
+    if request_type
+      return render status: 400, text: 'Request type not available for record' unless mapper.available_request_types.any?{|rt| rt.fetch(:request_type) == request_type}
+    end
 
     render partial: 'aeon/aeon_request_popup', locals: {
       record: record,
       mapper: mapper,
+      request_type: request_type,
     }
   end
 
