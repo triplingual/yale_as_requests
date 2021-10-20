@@ -238,9 +238,9 @@ class AeonArchivalObjectMapper < AeonRecordMapper
     end
 
     def map
-        if request_type == 'reading_room'
+        if request_type == AeonRecordMapper::REQUEST_TYPE_READING_ROOM
             super
-        elsif request_type == 'digitization'
+        elsif request_type == AeonRecordMapper::REQUEST_TYPE_PHOTODUPLICATION
             # HACK: It turns out we want to map to different forms within Aeon, so really we
             # want one mapping per (ASpaceRecordType, AeonForm).  Currently we only have one
             # mapper per ASpaceRecordType, so we're going to force it to do double duty with

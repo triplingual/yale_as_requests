@@ -6,6 +6,9 @@ class AeonRecordMapper
 
     attr_reader :record, :container_instances, :request_type
 
+    REQUEST_TYPE_READING_ROOM = 'reading_room'
+    REQUEST_TYPE_PHOTODUPLICATION = 'digitization'
+
     RESTRICTION_TYPE_NO_REQUEST = 'NoRequest'
     RESTRICTION_TYPE_BORN_DIGITAL = 'BornDigital'
 
@@ -13,30 +16,68 @@ class AeonRecordMapper
         @record = record
         @container_instances = find_container_instances(record['json'] || {})
 
-        apply_container_restriction_rules!
-
         @requested_instance_indexes = nil
 
-        @request_type = 'reading_room'
+        @request_type = REQUEST_TYPE_READING_ROOM
+    end
+
+    def disable_for_restriction_types(request_type)
+        disable_for_types = [RESTRICTION_TYPE_NO_REQUEST]
+
+        if request_type == REQUEST_TYPE_READING_ROOM
+            disable_for_types += ASUtils.wrap(repo_settings[:disable_reading_room_request_for_access_restriction_types])
+        elsif request_type == REQUEST_TYPE_PHOTODUPLICATION
+            disable_for_types += ASUtils.wrap(repo_settings[:disable_digital_copy_request_for_access_restriction_types])
+        end
+
+        disable_for_types
+    end
+
+    def container_instances_for_request_type(request_type = @request_type)
+        disable_for_types = disable_for_restriction_types(request_type)
+
+        @container_instances.reject do |instance|
+            if (top_container_uri = instance.dig('sub_container', 'top_container', 'ref'))
+                top_container = resolved_top_container_for_uri(top_container_uri)
+                ASUtils.wrap(top_container['active_restrictions']).any? do |restriction|
+                    !(ASUtils.wrap(restriction['local_access_restriction_type']) & disable_for_types).empty?
+                end
+            else
+                false
+            end
+        end
+    end
+
+    def request_type_available?(request_type)
+        disable_for_types = disable_for_restriction_types(request_type)
+
+        return false if any_local_access_restriction_type?(disable_for_types)
+
+        born_digital? || !container_instances_for_request_type(request_type).empty?
     end
 
     def available_request_types
         result = []
 
-        unless any_local_access_restriction_type?(repo_settings[:disable_reading_room_request_for_access_restriction_types])
+        if request_type_available?(REQUEST_TYPE_READING_ROOM)
             result << {
               :aeon_uri => "#{repo_settings[:aeon_web_url]}?action=11&type=200",
-              :request_type => 'reading_room',
+              :request_type => REQUEST_TYPE_READING_ROOM,
               :button_label => I18n.t('plugins.aeon_fulfillment.request_reading_room_button'),
               :button_help_text => I18n.t('plugins.aeon_fulfillment.request_reading_room_help_text'),
               :extra_params => {'RequestType' => 'Loan'}
             }
         end
 
-        unless any_local_access_restriction_type?(repo_settings[:disable_digital_copy_request_for_access_restriction_types])
+        if record.is_a?(Container)
+            # Containers can only be requested to the reading room
+            return result
+        end
+
+        if request_type_available?(REQUEST_TYPE_PHOTODUPLICATION)
             result << {
               :aeon_uri => "#{repo_settings[:aeon_web_url]}?action=10&form=23",
-              :request_type => 'digitization',
+              :request_type => REQUEST_TYPE_PHOTODUPLICATION,
               :button_label => I18n.t('plugins.aeon_fulfillment.request_digital_copy_button'),
               :button_help_text => I18n.t('plugins.aeon_fulfillment.request_digital_copy_help_text'),
               :extra_params => {'RequestType' => 'Copy', 'DocumentType' => 'Default'}
@@ -133,7 +174,13 @@ class AeonRecordMapper
 
         return true if any_local_access_restriction_type?(self.repo_settings[:hide_button_for_access_restriction_types])
         return true if any_local_access_restriction_type?(RESTRICTION_TYPE_NO_REQUEST)
-        return true if available_request_types.empty?
+
+        # If record has containers but they are not available for request, it means
+        # there is a condition that is blocking requests.
+        #
+        # We want records without any instances to have a request button that is
+        # visible but disabled.
+        return true if !@container_instances.empty? && available_request_types.empty?
 
         false
     end
@@ -212,7 +259,7 @@ class AeonRecordMapper
                 Rails.logger.debug("Aeon Fulfillment Plugin") { "Containers found?    #{has_top_container}" } if AeonRecordMapper.debug_mode?
                 Rails.logger.debug("Aeon Fulfillment Plugin") { "only_top_containers? #{only_top_containers}" } if AeonRecordMapper.debug_mode?
 
-                return (has_top_container || !only_top_containers) || supports_born_digital_requests?
+                return (has_top_container || !only_top_containers) || born_digital?
             end
 
         rescue Exception => e
@@ -497,22 +544,28 @@ class AeonRecordMapper
           return instances
         end
 
-        parent_uri = ''
-
-        if record_json['parent'].present?
-            parent_uri = record_json['parent']['ref']
-            parent_uri = record_json['parent'] unless parent_uri.present?
-        elsif record_json['resource'].present?
-            parent_uri = record_json['resource']['ref']
-            parent_uri = record_json['resource'] unless parent_uri.present?
+        if record.is_a?(Container)
+            return [record_json]
         end
 
-        if parent_uri.present?
-            Rails.logger.debug("Aeon Fulfillment Plugin") { "No Top Container instances found. Checking parent. (#{parent_uri})" }
-            parent = archivesspace.get_record(parent_uri)
-            parent_json = parent['json']
-            return find_container_instances(parent_json)
-        end
+        # DISABLE INHERITANCE MAGIC AS YALE DOESN'T USE IT
+        #
+        # parent_uri = ''
+        #
+        # if record_json['parent'].present?
+        #     parent_uri = record_json['parent']['ref']
+        #     parent_uri = record_json['parent'] unless parent_uri.present?
+        # elsif record_json['resource'].present?
+        #     parent_uri = record_json['resource']['ref']
+        #     parent_uri = record_json['resource'] unless parent_uri.present?
+        # end
+        #
+        # if parent_uri.present?
+        #     Rails.logger.debug("Aeon Fulfillment Plugin") { "No Top Container instances found. Checking parent. (#{parent_uri})" }
+        #     parent = archivesspace.get_record(parent_uri)
+        #     parent_json = parent['json']
+        #     return find_container_instances(parent_json)
+        # end
 
         Rails.logger.debug("Aeon Fulfillment Plugin") { "No Top Container instances found." } if AeonRecordMapper.debug_mode?
 
@@ -520,29 +573,11 @@ class AeonRecordMapper
     end
 
     def born_digital?
-        record.is_a?(ArchivalObject) && local_access_restriction_types.include?(RESTRICTION_TYPE_BORN_DIGITAL)
+        !!self.repo_settings[:requests_permitted_for_born_digital] && record.is_a?(ArchivalObject) && local_access_restriction_types.include?(RESTRICTION_TYPE_BORN_DIGITAL)
     end
 
     def self.debug_mode?
         AppConfig.has_key?(:aeon_fulfillment_debug) && AppConfig[:aeon_fulfillment_debug]
-    end
-
-    def supports_born_digital_requests?
-        !!self.repo_settings[:requests_permitted_for_born_digital] && born_digital?
-    end
-
-    def apply_container_restriction_rules!
-        # drop all containers that have an active restriction of 'NoRequest'
-        @container_instances.reject! do |instance|
-            if (top_container_uri = instance.dig('sub_container', 'top_container', 'ref'))
-                top_container = resolved_top_container_for_uri(top_container_uri)
-                ASUtils.wrap(top_container['active_restrictions']).any? do |restriction|
-                    ASUtils.wrap(restriction['local_access_restriction_type']).include?(RESTRICTION_TYPE_NO_REQUEST)
-                end
-            else
-                false
-            end
-        end
     end
 
     def resolved_top_container_for_uri(top_container_uri)
