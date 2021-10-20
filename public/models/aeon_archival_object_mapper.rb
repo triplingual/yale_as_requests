@@ -149,7 +149,7 @@ class AeonArchivalObjectMapper < AeonRecordMapper
         # ItemInfo11 (location uri)
         map_request_values(mappings, 'instance_top_container_uri', 'ItemInfo11') do |v|
             tc = json['instances'].select {|i| i.has_key?('sub_container') && i['sub_container'].has_key?('top_container')}
-                                  .map {|i| i['sub_container']['top_container']['_resolved']}
+                                  .map {|i| resolved_top_container_for_uri(i['sub_container']['top_container']['ref'])}
                                   .select {|t| t['uri'] == v}.first
 
             if tc
@@ -179,7 +179,7 @@ class AeonArchivalObjectMapper < AeonRecordMapper
         #mdc: and now we map SubLocations to accomodate previously-instituted mappings for container profiles.
         map_request_values(mappings, 'instance_top_container_uri', 'SubLocation') do |v|
             tc = json['instances'].select {|i| i.has_key?('sub_container') && i['sub_container'].has_key?('top_container')}
-                                  .map {|i| i['sub_container']['top_container']['_resolved']}
+                                  .map {|i| resolved_top_container_for_uri(i['sub_container']['top_container']['ref'])}
                                   .select {|t| t['uri'] == v}.first
             if tc
                 cp = tc.dig('container_profile', '_resolved', 'name') || ''
@@ -260,21 +260,32 @@ class AeonArchivalObjectMapper < AeonRecordMapper
             result['ItemIssue'] =
                 selected_instances.map {|instance_idx|
                 instance = self.record.json.fetch('instances', []).fetch(instance_idx)
-                (instance.dig('sub_container', 'top_container', '_resolved', 'series') || [])
+                if (top_container_ref = instance.dig('sub_container', 'top_container', 'ref'))
+                  resolved_top_container_for_uri(top_container_ref).fetch('series', [])
                     .map {|series| series.fetch('display_string')}
+                end
             }.flatten
              .uniq
+             .compact
              .join('; ')
 
             # ReferenceNumber (top_container barcode)
             result['ReferenceNumber'] = selected_instances.map {|instance_idx|
                 instance = self.record.json.fetch('instances', []).fetch(instance_idx)
                 instance.dig('sub_container', 'top_container', '_resolved', 'barcode')
+                if (top_container_ref = instance.dig('sub_container', 'top_container', 'ref'))
+                    resolved_top_container_for_uri(top_container_ref).fetch('barcode', nil)
+                end
             }.compact.join('; ')
 
             selected_instance_labels = selected_instances.map {|instance_idx|
                 instance = self.record.json.fetch('instances', []).fetch(instance_idx)
-                top_container_display_string = instance.dig('sub_container', 'top_container', '_resolved', 'display_string')
+
+                top_container_display_string = nil
+
+                if (top_container_ref = instance.dig('sub_container', 'top_container', 'ref'))
+                    top_container_display_string = resolved_top_container_for_uri(top_container_ref).fetch('display_string', nil)
+                end
 
                 next if top_container_display_string.nil?
 

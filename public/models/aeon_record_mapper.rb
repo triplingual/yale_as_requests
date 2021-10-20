@@ -6,9 +6,14 @@ class AeonRecordMapper
 
     attr_reader :record, :container_instances, :request_type
 
+    RESTRICTION_TYPE_NO_REQUEST = 'NoRequest'
+    RESTRICTION_TYPE_BORN_DIGITAL = 'BornDigital'
+
     def initialize(record)
         @record = record
         @container_instances = find_container_instances(record['json'] || {})
+
+        apply_container_restriction_rules!
 
         @requested_instance_indexes = nil
 
@@ -127,7 +132,7 @@ class AeonRecordMapper
         return true if self.repo_settings[:hide_button_for_accessions] && record.is_a?(Accession)
 
         return true if any_local_access_restriction_type?(self.repo_settings[:hide_button_for_access_restriction_types])
-        return true if any_local_access_restriction_type?('NoRequest')
+        return true if any_local_access_restriction_type?(RESTRICTION_TYPE_NO_REQUEST)
         return true if available_request_types.empty?
 
         false
@@ -419,8 +424,7 @@ class AeonRecordMapper
 
         request["instance_top_container_ref_#{request_number}"] = top_container['ref']
 
-        top_container_resolved = top_container['_resolved']
-        return request unless top_container_resolved
+        top_container_resolved = resolved_top_container_for_uri(top_container['ref'])
 
         request["instance_top_container_long_display_string_#{request_number}"] = top_container_resolved['long_display_string']
         request["instance_top_container_last_modified_by_#{request_number}"] = top_container_resolved['last_modified_by']
@@ -516,7 +520,7 @@ class AeonRecordMapper
     end
 
     def born_digital?
-        record.is_a?(ArchivalObject) && local_access_restriction_types.include?('BornDigital')
+        record.is_a?(ArchivalObject) && local_access_restriction_types.include?(RESTRICTION_TYPE_BORN_DIGITAL)
     end
 
     def self.debug_mode?
@@ -525,6 +529,24 @@ class AeonRecordMapper
 
     def supports_born_digital_requests?
         !!self.repo_settings[:requests_permitted_for_born_digital] && born_digital?
+    end
+
+    def apply_container_restriction_rules!
+        # drop all containers that have an active restriction of 'NoRequest'
+        @container_instances.reject! do |instance|
+            if (top_container_uri = instance.dig('sub_container', 'top_container', 'ref'))
+                top_container = resolved_top_container_for_uri(top_container_uri)
+                ASUtils.wrap(top_container['active_restrictions']).any? do |restriction|
+                    ASUtils.wrap(restriction['local_access_restriction_type']).include?(RESTRICTION_TYPE_NO_REQUEST)
+                end
+            else
+                false
+            end
+        end
+    end
+
+    def resolved_top_container_for_uri(top_container_uri)
+        ASUtils.json_parse(@record.raw.fetch('_resolved_top_container_uri_u_sstr').fetch(top_container_uri).fetch(0).fetch('json'))
     end
 
     protected :json_fields, :record_fields, :system_information,
