@@ -1,4 +1,9 @@
 (function(exp) {
+
+    exp.isFindAidView = function() {
+        return $('#collection-feed.infinite-record-container').length === 1;
+    };
+
     exp.loadAeonRequestForm = function(recordURI, requestType) {
         $.ajax({
             url: APP_PATH + 'aeon/aeon-request-popup',
@@ -6,6 +11,7 @@
             data: {
                 uri: recordURI,
                 request_type: requestType,
+                finding_aid_view: isFindAidView(),
             },
             success: function (html) {
                 $('#aeon_request_selector_modal .modal-body').html(html);
@@ -96,6 +102,8 @@
 
 $(document).ready(function() {
     $('#disabled-button-wrapper').tooltip({html:true});
+
+    $(document.body).append($('#aeon_request_modal_template').html());
 
     $('#aeon_request_button').on('click', function() {
         $('#aeon_request_selector_modal .modal-body').empty();

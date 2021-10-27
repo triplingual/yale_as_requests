@@ -14,22 +14,6 @@ mapper = AeonRecordMapper.mapper_for(record)
       <i class="<%= t('plugins.aeon_fulfillment.request_button_icon') %>"></i><br/><%= t('plugins.aeon_fulfillment.request_button_label') %>
     </button>
 
-    <div class="modal fade aeon_request_selector_modal" id="aeon_request_selector_modal" tabindex="-1" role="dialog" aria-labelledby="aeon_request_selector_modalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-            <h3 class="modal-title" id="aeon_request_selector_modalLabel"><%= t('plugins.aeon_fulfillment.choose_request_type') %></h3>
-          </div>
-          <div class="modal-body">
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal"><%= t('plugins.aeon_fulfillment.close_popup_label') %></button>
-          </div>
-        </div>
-      </div>
-    </div>
-
   <% else %>
 
     <div id="disabled-button-wrapper" tabindex="0" rel="tooltip" data-placement="bottom" title="<%= t('plugins.aeon_fulfillment.requesting_disabled') %>">

@@ -1,6 +1,24 @@
 <%= form_tag url_for(:controller => :aeon_request, :action => :build) do |f| %>
   <%= hidden_field_tag 'uri', record.uri %>
   <div>
+    <% if finding_aid_view %>
+      <%
+        resource = record.resolved_resource
+        series = (record.resolved_top_container || {}).fetch('series', [])
+                                                      .select{|s| record.json['ancestors'].map{|a| a['ref']}.include?(s['ref'])}
+                                                      .first
+      %>
+      <h3><%= resource['title'] %> (<%= (0..3).map{|n| resource["id_#{n}"]}.compact.join('-') %>)</h3>
+
+      <% if series %>
+        <h4><%= series %></h4>
+        <h5><%= record.display_string %></h5>
+      <% else %>
+        <h4><%= record.display_string %></h4>
+      <% end %>
+    <% end %>
+
+
     <% if mapper.kind_of?(AeonContainerMapper) %>
       <h3><%= mapper.record.display_string %></li></h3>
       <p><strong><%= I18n.t('plugins.aeon_fulfillment.request_reading_room_button') %></strong></p>

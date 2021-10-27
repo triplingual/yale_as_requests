@@ -32,6 +32,7 @@ class AeonRequestController < ApplicationController
     render partial: 'aeon/aeon_request_popup', locals: {
       record: record,
       mapper: mapper,
+      finding_aid_view: params[:finding_aid_view].to_s == 'true',
     }
   end
 

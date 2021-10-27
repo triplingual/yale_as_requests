@@ -1,25 +1,12 @@
 $(function() {
   var setup_inline_request_form = function(uri) {
-    const modal = $('#inline_request_modal');
-    modal.find('.action-btn').remove();
+    $('#aeon_request_selector_modal').remove();
+    $(document.body).append($('#aeon_request_modal_template').html());
 
-    $('#inline-aeon-request-form').html('Retrieving request information ...');
+    $('#aeon_request_selector_modal .modal-body').empty();
+    $('#aeon_request_selector_modal').modal('show');
 
-    modal.modal('show');
-
-    $.ajax(APP_PATH + "plugin/yale_aeon_mappings/inline_aeon_request_form", {
-      data: {
-        uri: uri
-      },
-      type: "GET",
-    }).done(function(form) {
-      const request_form = $('#inline-aeon-request-form');
-      request_form.html(form);
-      new AeonRequestForm(request_form.find('form:first'));
-    }).fail(function() {
-      $('#inline-aeon-request-form').html('Unable to retrieve request information');
-      $('#inline_request_modal').find('.action-btn').attr('disabled', true);
-    });
+    loadAeonRequestForm(uri, '');
   };
 
   window.setup_inline_request_form = setup_inline_request_form;
