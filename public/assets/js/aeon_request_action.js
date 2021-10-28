@@ -11,7 +11,7 @@
             data: {
                 uri: recordURI,
                 request_type: requestType,
-                finding_aid_view: isFindAidView(),
+                finding_aid_view: exp.isFindAidView(),
             },
             success: function (html) {
                 $('#aeon_request_selector_modal .modal-body').html(html);
