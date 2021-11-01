@@ -314,6 +314,8 @@ class AeonArchivalObjectMapper < AeonRecordMapper
 
             result['ItemDate'] = ASUtils.wrap(non_pui_ao.dates).map {|d| d['final_expression']}.join('; ')
 
+            result['ItemCitation'] = self.record.request_item.cite
+
             result
         else
             raise "Unknown request type: #{request_type}"
