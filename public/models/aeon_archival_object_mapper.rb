@@ -310,6 +310,10 @@ class AeonArchivalObjectMapper < AeonRecordMapper
 
             result['ItemInfo5'] = YaleAeonUtils.access_restrictions_content(non_pui_ao.json['notes'])
 
+            result['ItemInfo6'] = self.record.json['notes'].select {|n| n['type'] == 'userestrict'}
+                                                           .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
+                                                           .join(' ')
+
             result['ItemInfo8'] = YaleAeonUtils.local_access_restrictions(non_pui_ao.json['notes'])
 
             result['ItemDate'] = ASUtils.wrap(non_pui_ao.dates).map {|d| d['final_expression']}.join('; ')
