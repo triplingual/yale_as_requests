@@ -22,7 +22,7 @@ class AeonArchivalObjectMapper < AeonRecordMapper
     # Override of #show_action? from AeonRecordMapper
     def show_action?
         return false if !super
-        return self.requestable_based_on_archival_record_level?
+        self.requestable_based_on_archival_record_level?
     end
 
     # Override for AeonRecordMapper json_fields method.
@@ -232,103 +232,16 @@ class AeonArchivalObjectMapper < AeonRecordMapper
             mappings['collection_id'] += '; ' + ei['external_id']
         end
 
+        resource = archivesspace.get_record(self.record.json.fetch('resource').fetch('ref'))
+        mappings['CallNumber'] = resource.four_part_identifier.compact.join('-')
+
         StatusUpdater.update('Yale Aeon Last Request', :good, "Mapped: #{mappings['uri']}")
 
         mappings
     end
 
-    def map
-        if request_type == AeonRecordMapper::REQUEST_TYPE_READING_ROOM
-            super
-        elsif request_type == AeonRecordMapper::REQUEST_TYPE_PHOTODUPLICATION
-            # HACK: It turns out we want to map to different forms within Aeon, so really we
-            # want one mapping per (ASpaceRecordType, AeonForm).  Currently we only have one
-            # mapper per ASpaceRecordType, so we're going to force it to do double duty with
-            # this ugly if statement.
-            #
-            # NOTE: self.record in this context is the PUI version of the AO
-            # (/repositories/123/archival_objects/456#pui).
-
-            selected_instances = Array(@requested_instance_indexes)
-
-            result = {}.merge(self.system_information)
-
-            resource = archivesspace.get_record(self.record.json.fetch('resource').fetch('ref'))
-            result['CallNumber'] = resource.four_part_identifier.compact.join('-')
-
-            # Series for all instances get loaded into ItemIssue
-            result['ItemIssue'] =
-                selected_instances.map {|instance_idx|
-                instance = self.record.json.fetch('instances', []).fetch(instance_idx)
-                if (top_container_ref = instance.dig('sub_container', 'top_container', 'ref'))
-                  resolved_top_container_for_uri(top_container_ref).fetch('series', [])
-                    .map {|series| series.fetch('display_string')}
-                end
-            }.flatten
-             .uniq
-             .compact
-             .join('; ')
-
-            # ReferenceNumber (top_container barcode)
-            result['ReferenceNumber'] = selected_instances.map {|instance_idx|
-                instance = self.record.json.fetch('instances', []).fetch(instance_idx)
-                instance.dig('sub_container', 'top_container', '_resolved', 'barcode')
-                if (top_container_ref = instance.dig('sub_container', 'top_container', 'ref'))
-                    resolved_top_container_for_uri(top_container_ref).fetch('barcode', nil)
-                end
-            }.compact.join('; ')
-
-            selected_instance_labels = selected_instances.map {|instance_idx|
-                instance = self.record.json.fetch('instances', []).fetch(instance_idx)
-
-                top_container_display_string = nil
-
-                if (top_container_ref = instance.dig('sub_container', 'top_container', 'ref'))
-                    top_container_display_string = resolved_top_container_for_uri(top_container_ref).fetch('display_string', nil)
-                end
-
-                next if top_container_display_string.nil?
-
-                sub_container = instance.fetch('sub_container')
-
-                label_parts = []
-                label_parts << top_container_display_string
-                label_parts << "Folder %s" % [sub_container['indicator_2']] if sub_container['type_2'] == 'folder'
-                label_parts << "Folder %s" % [sub_container['indicator_3']] if sub_container['type_3'] == 'folder'
-
-                label_parts.compact.join(" > ")
-            }.compact
-
-            result['ItemVolume'] = selected_instance_labels.map {|s| s.gsub(/:.*/, '')}.join('; ')
-
-            result['ItemTitle'] = self.record.display_string
-
-            creator = self.record.json['linked_agents'].select {|a| a['role'] == 'creator'}.first
-            result['ItemAuthor'] = creator['_resolved']['title'] if creator
-
-            non_pui_ao = ao = archivesspace.get_record(self.record.json.fetch('uri') + '#pui')
-
-            result['ItemInfo5'] = YaleAeonUtils.access_restrictions_content(non_pui_ao.json['notes'])
-
-            result['ItemInfo6'] = self.record.json['notes'].select {|n| n['type'] == 'userestrict'}
-                                                           .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
-                                                           .join(' ')
-
-            result['ItemInfo8'] = YaleAeonUtils.local_access_restrictions(non_pui_ao.json['notes'])
-
-            result['ItemDate'] = ASUtils.wrap(non_pui_ao.dates).map {|d| d['final_expression']}.join('; ')
-
-            result['ItemCitation'] = self.record.request_item.cite
-
-            result
-        else
-            raise "Unknown request type: #{request_type}"
-        end
-    end
-
     private
 
-    # FIXME is it ok for the from_val to be nil? (PG not super sure)
     def map_request_values(mapped, from, to, &block)
         mapped['requests'].each do |r|
             ix = r['Request']
