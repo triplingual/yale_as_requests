@@ -1,24 +1,5 @@
 class AeonRequest
 
-    REQUEST_TYPE_READING_ROOM = 'reading_room'
-    REQUEST_TYPE_PHOTODUPLICATION = 'digitization'
-
-    RESTRICTION_TYPE_NO_REQUEST = 'NoRequest'
-    RESTRICTION_TYPE_BORN_DIGITAL = 'BornDigital'
-
-    def initialize(record)
-        @record = record
-        @container_instances = find_container_instances(record['json'] || {})
-
-        @requested_instance_indexes = nil
-
-        @request_type = REQUEST_TYPE_READING_ROOM
-    end
-
-    def repo_settings
-        AppConfig[:aeon_fulfillment][self.repo_code]
-    end
-
   def self.config_for(json)
     AppConfig[:aeon_fulfillment][json['repository']['_resolved']['repo_code']]
   end
