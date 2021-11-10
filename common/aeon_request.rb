@@ -4,20 +4,6 @@ class AeonRequest
     AppConfig[:aeon_fulfillment][json['repository']['_resolved']['repo_code']]
   end
 
-
-  def self.born_digital?(json)
-    !!config_for(json)[:requests_permitted_for_born_digital] &&
-      json['jsonmodel_type'] == 'archival_object' &&
-      restrictions(json).include?(RESTRICTION_TYPE_BORN_DIGITAL)
-  end
-
-  def self.restrictions(json)
-    (json['notes'] || []).select {|n| n['type'] == 'accessrestrict' && n.has_key?('rights_restriction')}
-      .map {|n| n['rights_restriction']['local_access_restriction_type']}
-      .flatten.uniq
-  end
-
-
   def self.build(json, opts = {})
 
     repo = opts[:repo] || json['repository']['_resolved']
