@@ -1,3 +1,5 @@
+require_relative '../../common/aeon_request'
+
 class AeonRecordMapper
 
     include ManipulateNode
@@ -120,49 +122,6 @@ class AeonRecordMapper
         AppConfig[:aeon_fulfillment][self.repo_code]
     end
 
-    def user_defined_fields
-        mappings = {}
-
-        if (udf_setting = self.repo_settings[:user_defined_fields])
-            if (user_defined_fields = (self.record['json'] || {})['user_defined'])
-
-                # Determine if the list is a whitelist or a blacklist of fields.
-                # If the setting is just an array, assume that the list is a
-                # whitelist.
-                if udf_setting == true
-                    # If the setting is set to "true", then all fields should be
-                    # pulled in. This is implemented as a blacklist that contains
-                    # 0 values.
-                    is_whitelist = false
-                    fields = []
-
-                    Rails.logger.debug("Aeon Fulfillment Plugin") { "Pulling in all user defined fields" } if AeonRecordMapper.debug_mode?
-                else
-                    if udf_setting.is_a?(Array)
-                        is_whitelist = true
-                        fields = udf_setting
-                    else
-                        list_type = udf_setting[:list_type]
-                        is_whitelist = (list_type == :whitelist) || (list_type == 'whitelist')
-                        fields = udf_setting[:values] || udf_setting[:fields] || []
-                    end
-
-                    list_type_description = is_whitelist ? 'Whitelist' : 'Blacklist'
-                    Rails.logger.debug("Aeon Fulfillment Plugin") { ":allow_user_defined_fields is a #{list_type_description}" } if AeonRecordMapper.debug_mode?
-                    Rails.logger.debug("Aeon Fulfillment Plugin") { "User Defined Field #{list_type_description}: #{fields}" } if AeonRecordMapper.debug_mode?
-                end
-
-                user_defined_fields.each do |field_name, value|
-                    if (is_whitelist ? fields.include?(field_name) : fields.exclude?(field_name))
-                        mappings["user_defined_#{field_name}"] = value
-                    end
-                end
-            end
-        end
-
-        mappings
-    end
-
     # This method tests whether the button should be hidden. This determination is based
     # on the settings for the repository and defaults to false.
     def hide_button?
@@ -275,244 +234,11 @@ class AeonRecordMapper
 
     # Pulls data from the contained record
     def map
-        mappings = {}
-
-        mappings = mappings
-            .merge(self.system_information)
-            .merge(self.json_fields)
-            .merge(self.record_fields)
-            .merge(self.user_defined_fields)
-
-        mappings
+      repo = self.record.resolved_repository
+      res = self.record.resolved_resource
+      AeonRequest.build(self.record.json, :repo => repo, :resource => res)
     end
 
-
-    # Pulls data from AppConfig and ASpace System
-    def system_information
-        mappings = {}
-
-        mappings['SystemID'] =
-            if (!self.repo_settings[:aeon_external_system_id].blank?)
-                self.repo_settings[:aeon_external_system_id]
-            else
-                "ArchivesSpace"
-            end
-
-        return_url =
-            if (!AppConfig[:public_proxy_url].blank?)
-                AppConfig[:public_proxy_url]
-            elsif (!AppConfig[:public_url].blank?)
-                AppConfig[:public_url]
-            else
-                ""
-            end
-
-        mappings['ReturnLinkURL'] = "#{return_url}#{self.record['uri']}"
-
-        mappings['ReturnLinkSystemName'] =
-            if (!self.repo_settings[:aeon_return_link_label].blank?)
-                self.repo_settings[:aeon_return_link_label]
-            else
-                "ArchivesSpace"
-            end
-
-        mappings['Site'] = self.repo_settings[:aeon_site_code] if self.repo_settings.has_key?(:aeon_site_code)
-
-        mappings
-    end
-
-
-    # Pulls data from self.record
-    def record_fields
-        mappings = {}
-
-        Rails.logger.debug("Aeon Fulfillment Plugin") { "Mapping Record: #{self.record}" } if AeonRecordMapper.debug_mode?
-
-        mappings['identifier'] = self.record.identifier || self.record['identifier']
-        mappings['publish'] = self.record['publish']
-        mappings['level'] = self.record.level || self.record['level']
-        mappings['title'] = strip_mixed_content(self.record['title'])
-        mappings['uri'] = self.record.uri || self.record['uri']
-
-        resolved_resource = self.record['_resolved_resource'] || self.record.resolved_resource
-        if resolved_resource
-            resource_obj = resolved_resource[self.record['resource']]
-            if resource_obj
-                collection_id_components = [
-                    resource_obj[0]['id_0'],
-                    resource_obj[0]['id_1'],
-                    resource_obj[0]['id_2'],
-                    resource_obj[0]['id_3']
-                ]
-
-                mappings['collection_id'] = collection_id_components
-                    .reject {|id_comp| id_comp.blank?}
-                    .join('-')
-
-                mappings['collection_title'] = resource_obj[0]['title']
-            end
-        end
-
-        resolved_repository = self.record.resolved_repository
-        if resolved_repository
-            mappings['repo_code'] = resolved_repository['repo_code']
-            mappings['repo_name'] = resolved_repository['name']
-        end
-
-        if record['creators']
-            mappings['creators'] = self.record['creators']
-                .select { |cr| cr.present? }
-                .map { |cr| cr.strip }
-                .join("; ")
-        end
-
-        mappings
-    end
-
-
-    # Pulls relevant data from the record's JSON property
-    def json_fields
-
-        mappings = {}
-
-        json = self.record.json
-        return mappings unless json
-
-        Rails.logger.debug("Aeon Fulfillment Plugin") { "Mapping Record JSON: #{json}" } if AeonRecordMapper.debug_mode?
-
-        mappings['language'] = json['language']
-
-        notes = json['notes']
-        if notes
-            mappings['physical_location_note'] = notes
-                .select { |note| note['type'] == 'physloc' and note['content'].present? }
-                .map { |note| note['content'] }
-                .flatten
-                .join("; ")
-
-            mappings['accessrestrict'] = notes
-                .select { |note| note['type'] == 'accessrestrict' and note['subnotes'] }
-                .map { |note| note['subnotes'] }
-                .flatten
-                .select { |subnote| subnote['content'].present? }
-                .map { |subnote| subnote['content'] }
-                .flatten
-                .join("; ")
-        end
-
-        if json['dates']
-            json['dates']
-                .select { |date| date['expression'].present? }
-                .group_by { |date| date['label'] }
-                .each { |label, dates|
-                    mappings["#{label}_date"] = dates
-                        .map { |date| date['expression'] }
-                        .join("; ")
-                }
-        end
-
-        mappings['restrictions_apply'] = json['restrictions_apply']
-        mappings['display_string'] = json['display_string']
-
-        mappings['requests'] = []
-        request_count = 0
-
-        if born_digital?
-            request_count = request_count + 1
-
-            mappings['requests'] << map_born_digital_to_reading_room_request(request_count)
-
-            return mappings
-        end
-
-        instances = self.container_instances
-
-        return mappings if instances.empty?
-
-        instances.each do |instance|
-            next if @requested_instance_indexes.nil? || !@requested_instance_indexes.include?(instance.fetch('_index'))
-
-            request_count = request_count + 1
-
-            mappings['requests'] << map_container_to_reading_room_request(instance, request_count)
-        end
-
-        mappings
-    end
-
-    def map_born_digital_to_reading_room_request(request_number)
-        request = {}
-        request['Request'] = "#{request_number}"
-        request
-    end
-
-    def map_container_to_reading_room_request(instance, request_number)
-        request = {}
-
-        request['Request'] = "#{request_number}"
-
-        request["instance_is_representative_#{request_number}"] = instance['is_representative']
-        request["instance_last_modified_by_#{request_number}"] = instance['last_modified_by']
-        request["instance_instance_type_#{request_number}"] = instance['instance_type']
-        request["instance_created_by_#{request_number}"] = instance['created_by']
-
-        container = instance['sub_container']
-        return request unless container
-
-        request["instance_container_grandchild_indicator_#{request_number}"] = container['indicator_3']
-        request["instance_container_child_indicator_#{request_number}"] = container['indicator_2']
-        request["instance_container_grandchild_type_#{request_number}"] = container['type_3']
-        request["instance_container_child_type_#{request_number}"] = container['type_2']
-        request["instance_container_last_modified_by_#{request_number}"] = container['last_modified_by']
-        request["instance_container_created_by_#{request_number}"] = container['created_by']
-
-        top_container = container['top_container']
-        return request unless top_container
-
-        request["instance_top_container_ref_#{request_number}"] = top_container['ref']
-
-        top_container_resolved = resolved_top_container_for_uri(top_container['ref'])
-
-        request["instance_top_container_long_display_string_#{request_number}"] = top_container_resolved['long_display_string']
-        request["instance_top_container_last_modified_by_#{request_number}"] = top_container_resolved['last_modified_by']
-        request["instance_top_container_display_string_#{request_number}"] = top_container_resolved['display_string']
-        request["instance_top_container_restricted_#{request_number}"] = top_container_resolved['restricted']
-        request["instance_top_container_created_by_#{request_number}"] = top_container_resolved['created_by']
-        request["instance_top_container_indicator_#{request_number}"] = top_container_resolved['indicator']
-        request["instance_top_container_barcode_#{request_number}"] = top_container_resolved['barcode']
-        request["instance_top_container_type_#{request_number}"] = top_container_resolved['type']
-        request["instance_top_container_uri_#{request_number}"] = top_container_resolved['uri']
-
-
-        collection = top_container_resolved['collection']
-        if collection
-            request["instance_top_container_collection_identifier_#{request_number}"] = collection
-                                                                                          .select { |c| c['identifier'].present? }
-                                                                                          .map { |c| c['identifier'] }
-                                                                                          .join("; ")
-
-            request["instance_top_container_collection_display_string_#{request_number}"] = collection
-                                                                                              .select { |c| c['display_string'].present? }
-                                                                                              .map { |c| c['display_string'] }
-                                                                                              .join("; ")
-        end
-
-        series = top_container_resolved['series']
-        if series
-            request["instance_top_container_series_identifier_#{request_number}"] = series
-                                                                                      .select { |s| s['identifier'].present? }
-                                                                                      .map { |s| s['identifier'] }
-                                                                                      .join("; ")
-
-            request["instance_top_container_series_display_string_#{request_number}"] = series
-                                                                                          .select { |s| s['display_string'].present? }
-                                                                                          .map { |s| s['display_string'] }
-                                                                                          .join("; ")
-
-        end
-
-        request
-    end
 
     # Grabs a list of instances from the given jsonmodel, ignoring any digital object
     # instances. If the current jsonmodel does not have any top container instances, the
@@ -528,7 +254,7 @@ class AeonRecordMapper
         # Inheriting containers doesn't work with our other plugin (it gets passed an
         # empty array that will cause an error later), so just skipping those for now.
         # TODO: Figure out why the other plugin does not work with this new feature
-        
+
         # The container pages will still get a few checks below, but those will always
         # evaluate to false.
         unless record.is_a?(Container)
@@ -584,7 +310,7 @@ class AeonRecordMapper
         ASUtils.json_parse(@record.raw.fetch('_resolved_top_container_uri_u_sstr').fetch(top_container_uri).fetch(0).fetch('json'))
     end
 
-    protected :json_fields, :record_fields, :system_information,
-              :requestable_based_on_archival_record_level?,
-              :find_container_instances, :user_defined_fields
+    # protected :json_fields, :record_fields, :system_information,
+    #           :requestable_based_on_archival_record_level?,
+    #           :find_container_instances, :user_defined_fields
 end
