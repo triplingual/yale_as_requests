@@ -1,8 +1,5 @@
 require 'record_inheritance'
-
 require_relative '../../common/aeon_request'
-require_relative '../../common/aeon_archival_object_request'
-require_relative '../../common/aeon_top_container_request'
 
 class ArchivesSpaceService < Sinatra::Base
 
@@ -55,16 +52,8 @@ class ArchivesSpaceService < Sinatra::Base
       end
     end
 
-    json_response(out.map{|json| request_for(json).build(json, AeonRequest.build(json))})
+    json_response(out.map{|json| AeonRequest.build(json)})
   end
-
-  def request_for(json)
-    {
-      'archival_object' => AeonArchivalObjectRequest,
-      'top_container' => AeonTopContainerRequest,
-    }[json['jsonmodel_type']]
-  end
-
 
   def find_model_by_jsonmodel_type(type)
     ASModel.all_models.find {|model|

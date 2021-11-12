@@ -1,16 +1,26 @@
+require_relative 'aeon_archival_object_request'
+require_relative 'aeon_top_container_request'
+
 class AeonRequest
+
+  def self.request_for(json)
+    {
+      'archival_object' => AeonArchivalObjectRequest,
+      'top_container' => AeonTopContainerRequest,
+    }[json['jsonmodel_type']]
+  end
 
   def self.config_for(json)
     AppConfig[:aeon_fulfillment][json['repository']['_resolved']['repo_code']]
   end
 
   def self.build(json, opts = {})
-
-    repo = opts[:repo] || json['repository']['_resolved']
+    out = {}
 
     cfg = config_for(json)
 
-    out = {}
+    out['repo_code'] = json['repository']['_resolved']['repo_code']
+    out['repo_name'] = json['repository']['_resolved']['name']
 
     out['SystemID'] = cfg.fetch(:aeon_external_system_id, "ArchivesSpace")
     out['ReturnLinkURL'] = "#{AppConfig[:public_proxy_url]}#{json['uri']}"
@@ -21,9 +31,6 @@ class AeonRequest
 
     out['uri'] = json['uri']
 
-    out['repo_code'] = repo['repo_code']
-    out['repo_name'] = repo['name']
-
     # FIXME: creators?
     # out['creators'] = ???
 
@@ -32,8 +39,7 @@ class AeonRequest
 
     out['display_string'] = json['display_string']
 
-    out
-
+    request_for(json).build(json, out, opts)
   end
 
 

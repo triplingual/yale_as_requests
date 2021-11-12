@@ -23,6 +23,12 @@ class AeonRecordMapper
         @request_type = REQUEST_TYPE_READING_ROOM
     end
 
+
+    def map
+      AeonRequest.build(self.record.json, :resource => self.record.resolved_resource)
+    end
+
+
     def disable_for_restriction_types(request_type)
         disable_for_types = [RESTRICTION_TYPE_NO_REQUEST]
 
@@ -231,11 +237,6 @@ class AeonRecordMapper
         false
     end
 
-
-    # Pulls data from the contained record
-    def map
-      AeonRequest.build(self.record.json, :repo => self.record.resolved_repository)
-    end
 
 
     # Grabs a list of instances from the given jsonmodel, ignoring any digital object

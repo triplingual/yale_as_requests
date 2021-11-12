@@ -1,6 +1,6 @@
 class AeonTopContainerRequest
 
-  def self.build(json, request)
+  def self.build(json, request, opts = {})
     out = request
 
     out['publish'] = json['is_linked_to_published_record']
