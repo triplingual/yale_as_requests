@@ -7,7 +7,6 @@ class AeonRequest
   def self.build(json, opts = {})
 
     repo = opts[:repo] || json['repository']['_resolved']
-    resource = opts[:resource] || json['resource']['_resolved']
 
     cfg = config_for(json)
 
@@ -18,21 +17,9 @@ class AeonRequest
     out['ReturnLinkSystemName'] = cfg.fetch(:aeon_return_link_label, "ArchivesSpace")
     out['Site'] = cfg.fetch(:aeon_site_code, '')
 
+    out['EADNumber'] = out['ReturnLinkURL']
 
-    # FIXME: ao specific
-    out['identifier'] = json['component_id']
-
-    out['publish'] = json['publish']
-
-    # FIXME: I18n?
-    out['level'] = json['level']
-
-    # FIXME: strip_mixed_content
-    out['title'] = json['title']
     out['uri'] = json['uri']
-
-    out['collection_id'] = [0,1,2,3].map{|ix| resource["id_#{ix}"]}.compact.join('-')
-    out['collection_title'] = resource['title']
 
     out['repo_code'] = repo['repo_code']
     out['repo_name'] = repo['name']
@@ -43,37 +30,15 @@ class AeonRequest
     # FIXME: language?
     # out['language'] = json['language']
 
-    out['physical_location_note'] = json['notes']
-      .select { |note| note['type'] == 'physloc' and note['content'].present? }
-      .map { |note| note['content'] }
-      .flatten
-      .join("; ")
-
-    out['accessrestrict'] = json['notes']
-      .select { |note| note['type'] == 'accessrestrict' and note['subnotes'] }
-      .map { |note| note['subnotes'] }
-      .flatten
-      .map { |subnote| subnote['content'] }
-      .flatten
-      .join("; ")
-
-    json['dates']
-      .select { |date| date.has_key?('expression') }
-      .group_by { |date| date['label'] }
-      .each { |label, dates|
-        out["#{label}_date"] = dates.map { |date| date['expression'] }.join("; ")
-      }
-
-    out['restrictions_apply'] = json['restrictions_apply']
     out['display_string'] = json['display_string']
 
-    out['requests'] = json['instances'].map do |instance|
-      # FIXME: all instances for now - this might be handled in lua land
-      # next if @requested_instance_indexes.nil? || !@requested_instance_indexes.include?(instance.fetch('_index'))
+    out
 
-      # this seems like fluff - it's an array folks
-      # request_count = request_count + 1
+  end
 
+
+  def self.build_requests(instances)
+    instances.map do |instance|
       request = {}
 
       request["instance_is_representative"] = instance['is_representative']
@@ -93,74 +58,103 @@ class AeonRequest
 
       request["instance_top_container_ref"] = container['top_container']['ref']
 
-      top_container = container['top_container']['_resolved']
+      request['ItemEdition'] = ['2', '3'].map {|lvl|
+        (container["type_#{lvl}"] || '').downcase == 'folder' ? container["indicator_#{lvl}"] : nil
+      }.compact.join('; ')
 
-      request["instance_top_container_long_display_string"] = top_container['long_display_string']
-      request["instance_top_container_last_modified_by"] = top_container['last_modified_by']
-      request["instance_top_container_display_string"] = top_container['display_string']
-      request["instance_top_container_restricted"] = top_container['restricted']
-      request["instance_top_container_created_by"] = top_container['created_by']
-      request["instance_top_container_indicator"] = top_container['indicator']
-      request["instance_top_container_barcode"] = top_container['barcode']
-      request["instance_top_container_type"] = top_container['type']
-      request["instance_top_container_uri"] = top_container['uri']
+      request['ItemISxN'] = ['2', '3'].map {|lvl|
+        (container["type_#{lvl}"] || '').downcase == 'item_barcode' ? container["indicator_#{lvl}"] : nil
+      }.compact.join('; ')
 
-      collection = top_container['collection']
-      request["instance_top_container_collection_identifier"] = collection.map { |c| c['identifier'] }.join("; ")
-      request["instance_top_container_collection_display_string"] = collection.map { |c| c['display_string'] }.join("; ")
 
-      series = top_container['series']
-      request["instance_top_container_series_identifier"] = series.map { |s| s['identifier'] }.join("; ")
-
-      request["instance_top_container_series_display_string"] = series.map { |s| s['display_string'] }.join("; ")
+      AeonRequest.build_top_container(container['top_container']['_resolved'], request)
 
       request.delete_if{|k,v| v.nil? || v.is_a?(String) && v.empty?}
 
       request
-
     end
-
-
-    # adapted from the original record mapper
-    # not sure if it is used at yale so removing for now
-    # untested!
-    # if (udf_setting = cfg[:user_defined_fields])
-    #   if user_defined_fields = json['user_defined']
-    #     if udf_setting == true
-    #       is_whitelist = false
-    #       fields = []
-    #     else
-    #       if udf_setting.is_a?(Array)
-    #         is_whitelist = true
-    #         fields = udf_setting
-    #       else
-    #         is_whitelist = udf_setting[:list_type].intern == :whitelist
-    #         fields = udf_setting[:values] || udf_setting[:fields] || []
-    #       end
-    #     end
-
-    #     user_defined_fields.each do |field_name, value|
-    #       if (is_whitelist ? fields.include?(field_name) : fields.exclude?(field_name))
-    #         out["user_defined_#{field_name}"] = value
-    #       end
-    #     end
-    #   end
-    # end
-
-    out
   end
 
+  def self.build_top_container(json, request)
+    request["instance_top_container_long_display_string"] = json['long_display_string']
+    request["instance_top_container_last_modified_by"] = json['last_modified_by']
+    request["instance_top_container_display_string"] = json['display_string']
+    request["instance_top_container_restricted"] = json['restricted']
+    request["instance_top_container_created_by"] = json['created_by']
+    request["instance_top_container_indicator"] = json['indicator']
+    request["instance_top_container_barcode"] = json['barcode']
+    request["instance_top_container_type"] = json['type']
+    request["instance_top_container_uri"] = json['uri']
+
+    request["instance_top_container_collection_identifier"] = json['collection'].map { |c| c['identifier'] }.join("; ")
+    request["instance_top_container_collection_display_string"] = json['collection'].map { |c| c['display_string'] }.join("; ")
+
+    request["instance_top_container_series_identifier"] = json['series'].map { |s| s['identifier'] }.join("; ")
+    request["instance_top_container_series_display_string"] = json['series'].map { |s| s['display_string'] }.join("; ")
+
+    request["ReferenceNumber"] = request["instance_top_container_barcode"]
+
+    request['ItemInfo1'] = json['restricted'] ? 'Y' : 'N'
+
+    request['ItemVolume'] = json['display_string'][0, (json['display_string'].index(':') || json['display_string'].length)]
+    request['ItemInfo10'] = json['uri']
+    request["ItemIssue"] = json['series'].map{|s| s['level_display_string'] + ' ' + s['identifier'] + '. ' + s['display_string']}.join('; ')
+
+    if (loc = json['container_locations'].find{|cl| cl['status'] == 'current'})
+      # FIXME: locations are not resolved in the pui index json for aos and there seems to be
+      #        no way to resolve them without getting the top_containers individually (which do have them resolved)
+      #        so skipping for now if we lack '_resolved'.
+      request["Location"] = loc['_resolved']['title'].sub(/\[\d{5}, /, '[') if loc['_resolved']
+      request['instance_top_container_long_display_string'] = request['Location']
+
+      # ItemInfo11 (location uri)
+      request["ItemInfo11"] = loc['ref']
+    else
+      # added this so that we don't wind up with the default Aeon mapping here, which maps the top container long display name to the location.
+      request['instance_top_container_long_display_string'] = nil
+    end
+
+    request
+  end
+
+  # adapted from the original record mapper
+  # not sure if it is used at yale so removing for now
+  # untested!
+  def self.build_user_defined_fields(udf)
+    if (udf_setting = cfg[:user_defined_fields])
+      if user_defined_fields = json['user_defined']
+        if udf_setting == true
+          is_whitelist = false
+          fields = []
+        else
+          if udf_setting.is_a?(Array)
+            is_whitelist = true
+            fields = udf_setting
+          else
+            is_whitelist = udf_setting[:list_type].intern == :whitelist
+            fields = udf_setting[:values] || udf_setting[:fields] || []
+          end
+        end
+
+        user_defined_fields.each do |field_name, value|
+          if (is_whitelist ? fields.include?(field_name) : fields.exclude?(field_name))
+            out["user_defined_#{field_name}"] = value
+          end
+        end
+      end
+    end
+  end
 
 
   # from yale_aeon_utils
 
-  def self.doc_type(settings, id)
-    resource_id_map(settings[:document_type_map], id)
+  def self.doc_type(json, id)
+    resource_id_map(config_for(json)[:document_type_map], id)
   end
 
 
-  def self.web_request_form(settings, id)
-    resource_id_map(settings[:web_request_form_map], id)
+  def self.web_request_form(json, id)
+    resource_id_map(config_for(json)[:web_request_form_map], id)
   end
 
 
@@ -188,7 +182,7 @@ class AeonRequest
   def self.access_restrictions_content(notes)
     notes.select {|n| n['type'] == 'accessrestrict'}
          .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
-         .join(' ')
+         .join('; ')
   end
 
 end

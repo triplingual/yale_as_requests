@@ -4,12 +4,8 @@ class AeonArchivalObjectMapper < AeonRecordMapper
 
     register_for_record_type(ArchivalObject)
 
-    def initialize(archival_object)
-        super(archival_object)
-    end
-
     def map
-        AeonArchivalObjectRequest.build(self.record.json, super)
+        AeonArchivalObjectRequest.build(self.record.json, super, :resource => self.record.resolved_resource)
     end
 
     # Override of #show_action? from AeonRecordMapper

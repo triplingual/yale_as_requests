@@ -2,6 +2,7 @@ require 'record_inheritance'
 
 require_relative '../../common/aeon_request'
 require_relative '../../common/aeon_archival_object_request'
+require_relative '../../common/aeon_top_container_request'
 
 class ArchivesSpaceService < Sinatra::Base
 
@@ -22,6 +23,9 @@ class ArchivesSpaceService < Sinatra::Base
                'top_container::container_profile',
                'ancestors',
                'linked_agents',
+               'container_profile',
+               'container_locations',
+               'active_restrictions::linked_records',
               ]
 
     out = []
@@ -51,7 +55,14 @@ class ArchivesSpaceService < Sinatra::Base
       end
     end
 
-    json_response(out.map{|json| AeonArchivalObjectRequest.build(json, AeonRequest.build(json))})
+    json_response(out.map{|json| request_for(json).build(json, AeonRequest.build(json))})
+  end
+
+  def request_for(json)
+    {
+      'archival_object' => AeonArchivalObjectRequest,
+      'top_container' => AeonTopContainerRequest,
+    }[json['jsonmodel_type']]
   end
 
 

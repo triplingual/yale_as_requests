@@ -234,9 +234,7 @@ class AeonRecordMapper
 
     # Pulls data from the contained record
     def map
-      repo = self.record.resolved_repository
-      res = self.record.resolved_resource
-      AeonRequest.build(self.record.json, :repo => repo, :resource => res)
+      AeonRequest.build(self.record.json, :repo => self.record.resolved_repository)
     end
 
 
