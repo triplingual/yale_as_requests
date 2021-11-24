@@ -13,6 +13,7 @@ class ArchivesSpaceService < Sinatra::Base
     'top_container::container_profile',
     'ancestors',
     'linked_agents',
+    'ancestors::linked_agents',
     'container_profile',
     'container_locations',
     'active_restrictions::linked_records',
