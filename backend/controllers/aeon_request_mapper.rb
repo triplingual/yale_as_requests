@@ -254,34 +254,37 @@ class ArchivesSpaceService < Sinatra::Base
                                                :type => ['archival_object'],
                                                :aq => ao_query.build,
                                              })
-    matching_aos = Search.search(search_params, nil).fetch('results', [])
-
     born_digital = []
     ao_to_top_container = []
 
-    matching_aos.each do |result|
-      result_json = ASUtils.json_parse(result.fetch('json'))
-      ao_json = URIResolver.resolve_references(JSONModel(:archival_object).from_hash(result_json, false, true), RESOLVE_PARAMS)
-      inherited_json = RecordInheritance.merge(ao_json)
+    Search.search(search_params, nil).fetch('results', []).each_slice(16) do |matching_aos|
+      ao_jsonmodels = matching_aos.map {|result|
+        JSONModel(:archival_object).from_hash(ASUtils.json_parse(result.fetch('json')),
+                                              false, true)
+      }
 
-      # identify those that are born digital
-      local_access_restriction_types = inherited_json['notes'].select {|n| n['type'] == 'accessrestrict' && n.has_key?('rights_restriction')}
-                                                              .map {|n| n['rights_restriction']['local_access_restriction_type']}
-                                                              .flatten.uniq
+      merged_record_hashes = RecordInheritance.merge(URIResolver.resolve_references(ao_jsonmodels, RESOLVE_PARAMS))
 
-      if local_access_restriction_types.include?('BornDigital')
-        born_digital << BornDigitalItem.new(result.fetch('id'), result, inherited_json).to_aeon_grid_row
+      matching_aos.zip(merged_record_hashes).each do |result, inherited_json|
+        # identify those that are born digital
+        local_access_restriction_types = inherited_json['notes'].select {|n| n['type'] == 'accessrestrict' && n.has_key?('rights_restriction')}
+                                           .map {|n| n['rights_restriction']['local_access_restriction_type']}
+                                           .flatten.uniq
 
-        next
-      end
+        if local_access_restriction_types.include?('BornDigital')
+          born_digital << BornDigitalItem.new(result.fetch('id'), result, inherited_json).to_aeon_grid_row
 
-      # map those with container instances
-      ASUtils.wrap(result['top_container_uri_u_sstr']).each do |top_container_uri|
-        ao_to_top_container << ItemWithTopContainer.new(result.fetch('id'),
-                                                        result,
-                                                        inherited_json,
-                                                        top_container_uri)
-                                                   .to_aeon_grid_row
+          next
+        end
+
+        # map those with container instances
+        ASUtils.wrap(result['top_container_uri_u_sstr']).each do |top_container_uri|
+          ao_to_top_container << ItemWithTopContainer.new(result.fetch('id'),
+                                                          result,
+                                                          inherited_json,
+                                                          top_container_uri)
+                                   .to_aeon_grid_row
+        end
       end
     end
 
