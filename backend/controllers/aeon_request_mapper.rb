@@ -113,12 +113,6 @@ class ArchivesSpaceService < Sinatra::Base
           "type" => "string",
         },
         {
-          "title" => "Location",
-          "request_field" => "location",
-          "width" => 100,
-          "type" => "string",
-        },
-        {
           "title" => "Item ID",
           "request_field" => "item",
           "width" => 100,
@@ -127,12 +121,6 @@ class ArchivesSpaceService < Sinatra::Base
         {
           "title" => "Item Title",
           "request_field" => "item_title",
-          "width" => 100,
-          "type" => "string",
-        },
-        {
-          "title" => "Request JSON",
-          "request_field" => "request_json",
           "width" => 100,
           "type" => "string",
         },
