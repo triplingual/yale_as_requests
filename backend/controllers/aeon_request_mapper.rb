@@ -114,13 +114,19 @@ class ArchivesSpaceService < Sinatra::Base
         },
         {
           "title" => "Item ID",
-          "request_field" => "item",
+          "request_field" => "item_id",
           "width" => 100,
           "type" => "string",
         },
         {
           "title" => "Item Title",
           "request_field" => "item_title",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Published?",
+          "request_field" => "published",
           "width" => 100,
           "type" => "string",
         },
