@@ -54,10 +54,164 @@ class ArchivesSpaceService < Sinatra::Base
     json_response(out.map{|json| AeonRequest.build(json)})
   end
 
+  AeonClientGridRow = Struct.new(:item_type, :repo_code, :collection_title, :series_title, :call_number, :container_title, :container_barcode, :location, :restrictions, :published, :item_id, :item_title, :request_json) do
+    def self.column_definitions
+      [
+        {
+           "title" => "Type",
+           "request_field" => "item_type",
+           "width" => 100,
+           "type" => "string",
+        },
+        {
+          "title" => "Repository",
+          "request_field" => "repo_code",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Collection",
+          "request_field" => "collection_title",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Series",
+          "request_field" => "series_title",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Call Number",
+          "request_field" => "call_number",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Container Title",
+          "request_field" => "container_title",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Container Barcode",
+          "request_field" => "container_barcode",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Location",
+          "request_field" => "location",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Restrictions",
+          "request_field" => "restrictions",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Location",
+          "request_field" => "location",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Item ID",
+          "request_field" => "item",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Item Title",
+          "request_field" => "item_title",
+          "width" => 100,
+          "type" => "string",
+        },
+        {
+          "title" => "Request JSON",
+          "request_field" => "request_json",
+          "width" => 100,
+          "type" => "string",
+        },
+      ]
+    end
 
-  Container = Struct.new(:top_container_uri, :top_container_json, :request)
-  BornDigitalItem = Struct.new(:archival_object_uri, :archival_object_json, :request)
-  ItemWithTopContainer = Struct.new(:archival_object_uri, :top_container_uri, :archival_object_json, :top_container_json, :request)
+    def to_h
+      super.to_h.map{|k, v| [k, v.to_s]}.to_h
+    end
+  end
+
+  Container = Struct.new(:top_container_uri, :solr_doc) do
+    def to_aeon_grid_row
+      top_container_json = ASUtils.json_parse(solr_doc.fetch('json'))
+      request = AeonRequest.build(top_container_json)
+
+      AeonClientGridRow.new('Container',
+                            top_container_json.dig('repository', '_resolved', 'repo_code'),
+                            ASUtils.wrap(top_container_json.dig('collection')).map{|c| c['display_string']}.join('; '),
+                            ASUtils.wrap(top_container_json.dig('series')).map{|s| s['display_string']}.join('; '),
+                            request.dig('CallNumber'),
+                            top_container_json.dig('display_string'),
+                            top_container_json.dig('barcode'),
+                            solr_doc.dig('location_display_string_u_sstr'),
+                            request.dig('ItemInfo5'),
+                            !!solr_doc.dig('publish'),
+                            '',
+                            '',
+                            request.to_json)
+                       .to_h
+    end
+  end
+
+  BornDigitalItem = Struct.new(:archival_object_uri, :solr_doc, :inherited_json) do
+    def to_aeon_grid_row
+      request = AeonRequest.build(inherited_json)
+
+      AeonClientGridRow.new('BornDigital',
+                            inherited_json.dig('repository', '_resolved', 'repo_code'),
+                            inherited_json.dig('resource','_resolved','title'),
+                            (ASUtils.wrap(inherited_json['ancestors']).find{|itm| itm['level'] == 'series'} || {}).dig('_resolved', 'display_string'),
+                            request.dig('CallNumber'),
+                            '',
+                            '',
+                            '',
+                            request.dig('ItemInfo5'),
+                            !!solr_doc.dig('publish'),
+                            inherited_json['component_id'],
+                            solr_doc['title'],
+                            request.to_json)
+                       .to_h
+    end
+  end
+
+  ItemWithTopContainer = Struct.new(:archival_object_uri, :solr_doc, :inherited_json, :top_container_uri) do
+    def to_aeon_grid_row
+      request = AeonRequest.build(inherited_json)
+
+      request['requests'] = ASUtils.wrap(request.fetch('requests'))
+                                   .select{|req| req.fetch('instance_top_container_uri', nil) == top_container_uri}
+
+      target_instance = inherited_json['instances'].find{|instance| instance.dig('sub_container', 'top_container', 'ref') == top_container_uri} || {}
+      container_location = ASUtils.wrap(target_instance.dig('sub_container', 'top_container', '_resolved', 'container_locations')).find{|cl| cl['status'] == 'current'} || {}
+
+      AeonClientGridRow.new('Container',
+                            inherited_json.dig('repository', '_resolved', 'repo_code'),
+                            inherited_json.dig('resource','_resolved','title'),
+                            (ASUtils.wrap(inherited_json['ancestors']).find{|itm| itm['level'] == 'series'} || {}).dig('_resolved', 'display_string'),
+                            request.dig('CallNumber'),
+                            target_instance.dig('sub_container', 'top_container', '_resolved', 'display_string'),
+                            target_instance.dig('sub_container', 'top_container', '_resolved', 'barcode'),
+                            container_location.dig('_resolved', 'title'),
+                            request.dig('ItemInfo5'),
+                            !!solr_doc.dig('publish'),
+                            inherited_json['component_id'],
+                            solr_doc['title'],
+                            request.to_json)
+                       .to_h
+    end
+  end
 
   Endpoint.get('/plugins/yale_as_requests/search')
           .description("Return results to the Aeon Client")
@@ -79,12 +233,12 @@ class ArchivesSpaceService < Sinatra::Base
                                                :type => ['top_container'],
                                                :aq => container_query.build,
                                              })
+
     top_containers = Search.search(search_params, nil).fetch('results', [])
                            .map{|result|
-                             container_json = ASUtils.json_parse(result.fetch('json'))
                              Container.new(result.fetch('id'),
-                                           container_json,
-                                           AeonRequest.build(container_json))
+                                           result)
+                                      .to_aeon_grid_row
                             }
 
     # find archival objects
@@ -107,49 +261,31 @@ class ArchivesSpaceService < Sinatra::Base
     matching_aos.each do |result|
       result_json = ASUtils.json_parse(result.fetch('json'))
       ao_json = URIResolver.resolve_references(JSONModel(:archival_object).from_hash(result_json, false, true), RESOLVE_PARAMS)
+      inherited_json = RecordInheritance.merge(ao_json)
 
       # identify those that are born digital
-      inherited_json = RecordInheritance.merge(ao_json, :remove_ancestors => true)
       local_access_restriction_types = inherited_json['notes'].select {|n| n['type'] == 'accessrestrict' && n.has_key?('rights_restriction')}
                                                               .map {|n| n['rights_restriction']['local_access_restriction_type']}
                                                               .flatten.uniq
 
       if local_access_restriction_types.include?('BornDigital')
-        born_digital << BornDigitalItem.new(result.fetch('id'), inherited_json, AeonRequest.build(inherited_json))
+        born_digital << BornDigitalItem.new(result.fetch('id'), result, inherited_json).to_aeon_grid_row
 
         next
       end
 
       # map those with container instances
       ASUtils.wrap(result['top_container_uri_u_sstr']).each do |top_container_uri|
-        request = AeonRequest.build(ao_json)
-
-        request['requests'] = ASUtils.wrap(request.fetch('requests'))
-                                .select{|req| req.fetch('instance_top_container_uri', nil) == top_container_uri}
-
         ao_to_top_container << ItemWithTopContainer.new(result.fetch('id'),
-                                                        top_container_uri,
-                                                        result_json,
-                                                        nil,
-                                                        request)
+                                                        result,
+                                                        inherited_json,
+                                                        top_container_uri)
+                                                   .to_aeon_grid_row
       end
     end
 
-    unless ao_to_top_container.empty?
-      containers_by_uri = Search
-        .records_for_uris(ao_to_top_container.map{|item| item.top_container_uri}.uniq)
-        .fetch('results', [])
-        .map{|result| [result.fetch('id'), ASUtils.json_parse(result.fetch('json'))]}
-        .to_h
-
-      ao_to_top_container.each do |item|
-        item.top_container_json = containers_by_uri.fetch(item.top_container_uri)
-      end
-    end
-
-    json_response(:top_containers => top_containers.map(&:to_h),
-                  :top_containers_with_archival_objects => ao_to_top_container.map(&:to_h),
-                  :born_digital_archival_objects => born_digital.map(&:to_h))
+    json_response(:columns => AeonClientGridRow.column_definitions,
+                  :requests => top_containers + ao_to_top_container + born_digital)
   end
 
 
