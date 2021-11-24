@@ -53,7 +53,7 @@ class AeonRequest
       request["instance_created_by"] = instance['created_by']
 
       container = instance['sub_container']
-      return request unless container
+      next request unless container
 
       request["instance_container_grandchild_indicator"] = container['indicator_3']
       request["instance_container_child_indicator"] = container['indicator_2']
