@@ -66,8 +66,8 @@ class AeonArchivalObjectRequest
     out['ItemInfo14'] = json['resource']['ref']
 
     creator = json['linked_agents'].find{|a| a['role'] == 'creator'}
-    out['ItemAuthor'] = ['_resolved']['title'] if creator
 
+    out['ItemAuthor'] = creator['_resolved']['title'] if creator
     out['ItemInfo5'] = AeonRequest.access_restrictions_content(json['notes'])
 
     out['ItemInfo6'] = json['notes'].select {|n| n['type'] == 'userestrict'}
