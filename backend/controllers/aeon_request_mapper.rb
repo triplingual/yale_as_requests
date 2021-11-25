@@ -150,7 +150,7 @@ class ArchivesSpaceService < Sinatra::Base
                             request.dig('CallNumber'),
                             top_container_json.dig('display_string'),
                             top_container_json.dig('barcode'),
-                            solr_doc.dig('location_display_string_u_sstr'),
+                            solr_doc.dig('location_display_string_u_sstr', 0),
                             request.dig('ItemInfo5'),
                             !!solr_doc.dig('publish'),
                             '',
