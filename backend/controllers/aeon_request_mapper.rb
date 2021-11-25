@@ -59,13 +59,29 @@ class ArchivesSpaceService < Sinatra::Base
   Endpoint.get('/plugins/yale_as_requests/search')
           .description("Return results to the Aeon Client")
           .params(['q' , String, "Query string"])
-          .permissions([]) # FIXME
+          .permissions([:view_all_records])
           .returns([200, "{}"]) \
   do
     base_search_params = {
       :page => 1,
-      :page_size => 1000,
+      :page_size => AppConfig.has_key?(:aeon_client_max_results) ? AppConfig[:aeon_client_max_results] : 1000,
     }
+
+    if AppConfig.has_key?(:aeon_client_repo_codes) && !ASUtils.wrap(AppConfig[:aeon_client_repo_codes]).empty?
+      repo_query = AdvancedQueryBuilder.new
+
+      repo_lookup = Repository.map {|repo| [repo.repo_code, repo.uri]}.to_h
+
+      ASUtils.wrap(AppConfig[:aeon_client_repo_codes]).each do |repo_code|
+        if repo_lookup.has_key?(repo_code)
+          repo_query = repo_query.or('repository', repo_lookup.fetch(repo_code), 'text', true)
+        else
+          p "WARN: repository not found for #{repo_code}"
+        end
+      end
+
+      base_search_params[:filter] = repo_query.build
+    end
 
     # find top containers
     container_query = AdvancedQueryBuilder.new
