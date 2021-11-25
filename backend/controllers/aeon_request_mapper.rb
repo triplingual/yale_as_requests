@@ -138,6 +138,16 @@ class ArchivesSpaceService < Sinatra::Base
     end
   end
 
+  class AeonRequestHelper
+    def self.flat_request(aeon_request)
+      requests = ASUtils.wrap(aeon_request.delete('requests'))
+
+      return request if requests.empty?
+
+      aeon_request.merge(requests.first)
+    end
+  end
+
   Container = Struct.new(:top_container_uri, :solr_doc) do
     def to_aeon_grid_row
       top_container_json = ASUtils.json_parse(solr_doc.fetch('json'))
@@ -155,7 +165,7 @@ class ArchivesSpaceService < Sinatra::Base
                             !!solr_doc.dig('publish'),
                             '',
                             '',
-                            request.to_json)
+                            AeonRequestHelper.flat_request(request).to_json)
                        .to_h
     end
   end
@@ -176,7 +186,7 @@ class ArchivesSpaceService < Sinatra::Base
                             !!solr_doc.dig('publish'),
                             inherited_json['component_id'],
                             solr_doc['title'],
-                            request.to_json)
+                            AeonRequestHelper.flat_request(request).to_json)
                        .to_h
     end
   end
@@ -203,7 +213,7 @@ class ArchivesSpaceService < Sinatra::Base
                             !!solr_doc.dig('publish'),
                             inherited_json['component_id'],
                             solr_doc['title'],
-                            request.to_json)
+                            AeonRequestHelper.flat_request(request).to_json)
                        .to_h
     end
   end
