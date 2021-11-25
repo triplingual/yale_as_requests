@@ -76,7 +76,7 @@ class ArchivesSpaceService < Sinatra::Base
         if repo_lookup.has_key?(repo_code)
           repo_query = repo_query.or('repository', repo_lookup.fetch(repo_code), 'text', true)
         else
-          p "WARN: repository not found for #{repo_code}"
+          raise "repository not found for #{repo_code}"
         end
       end
 
