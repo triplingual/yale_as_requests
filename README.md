@@ -34,6 +34,31 @@ AppConfig[:aeon_fulfillment] = {
 `AppConfig[:aeon_fulfillment_debug]` - boolean (default false)
 Set to true to enable detailed debugging information in the logs
 
+## Aeon Client Add-on Support
+
+This plugin can be used in conjunction with the Aeon Client add-on
+https://github.com/hudmol/YaleAeonSpace and provides an API endpoint
+from which the add-on is able to search ArchivesSpace and then populate
+the Aeon RequestForm for a particular container or BornDigital item.
+
+### Configuration
+
+`AppConfig[:aeon_client_max_results] = 1000` Default: 1000. This is the
+max number of results returned from the API to the Aeon client.
+
+`AppConfig[:aeon_client_repo_codes] = ['myrepo']` Default: All
+repositories are searched. When present, the API will only return
+results from the repositories listed.
+
+This new API requires an authenticated session with the
+`view_all_records` permission.  If you would like this plugin to bootstrap
+this user account for you, provide the username and password with the
+following configuration (restart the application for changes to take
+effect):
+
+`AppConfig[:aeon_client_username] = 'aeonclient'`
+`AppConfig[:aeon_client_password] = 'pw'`
+
 
 ## Note
 
