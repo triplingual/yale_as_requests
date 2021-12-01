@@ -11,7 +11,15 @@ class AeonRequest
   end
 
   def self.config_for(json)
-    AppConfig[:aeon_fulfillment][json['repository']['_resolved']['repo_code']]
+    repo_code = json.dig('repository','_resolved','repo_code')
+
+    raise "No resolved repository on record: #{json['uri']}" if repo_code.nil?
+
+    if AppConfig[:aeon_fulfillment].has_key?(repo_code)
+      AppConfig[:aeon_fulfillment].fetch(repo_code)
+    else
+      raise "No AppConfig[:aeon_fulfillment] entry for repo: #{repo_code}"
+    end
   end
 
   def self.build(json, opts = {})
