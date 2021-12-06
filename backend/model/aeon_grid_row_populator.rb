@@ -27,9 +27,10 @@ class AeonGridRowPopulator
     if AppConfig.has_key?(:aeon_client_repo_codes) && !ASUtils.wrap(AppConfig[:aeon_client_repo_codes]).empty?
       repo_query = AdvancedQueryBuilder.new
 
-      repo_lookup = Repository.map {|repo| [repo.repo_code, repo.uri]}.to_h
+      repo_lookup = Repository.map {|repo| [repo.repo_code.downcase, repo.uri]}.to_h
 
       ASUtils.wrap(AppConfig[:aeon_client_repo_codes]).each do |repo_code|
+        repo_code = repo_code.downcase
         if repo_lookup.has_key?(repo_code)
           repo_query = repo_query.or('repository', repo_lookup.fetch(repo_code), 'text', true)
         else

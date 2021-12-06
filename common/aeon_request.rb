@@ -15,6 +15,9 @@ class AeonRequest
 
     raise "No resolved repository on record: #{json['uri']}" if repo_code.nil?
 
+    # force lowercase as per original aeon_fulfillment plugin
+    repo_code = repo_code.downcase
+
     if AppConfig[:aeon_fulfillment].has_key?(repo_code)
       AppConfig[:aeon_fulfillment].fetch(repo_code)
     else
