@@ -25,7 +25,22 @@ class AeonRecordMapper
 
 
     def map
-      AeonRequest.build(self.record.json, :resource => self.record.resolved_resource)
+      selected_container_instances = nil
+
+      if @requested_instance_indexes
+          selected_container_instances = []
+
+          self.record.json['instances'].each_with_index do |instance, idx|
+             next if instance['digital_object']
+             next unless @requested_instance_indexes.include?(idx)
+
+             selected_container_instances << instance
+          end
+      end
+
+      AeonRequest.build(self.record.json,
+                        :resource => self.record.resolved_resource,
+                        :selected_container_instances => selected_container_instances)
     end
 
 

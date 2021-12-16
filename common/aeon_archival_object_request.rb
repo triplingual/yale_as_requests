@@ -99,7 +99,7 @@ class AeonArchivalObjectRequest
     out['CallNumber'] = out['collection_id']
 
 
-    out['requests'] = AeonRequest.build_requests(json['instances'])
+    out['requests'] = AeonRequest.build_requests(opts.fetch(:selected_container_instances, json['instances']))
 
 
     out
