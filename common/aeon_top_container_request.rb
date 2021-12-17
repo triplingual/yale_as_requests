@@ -5,9 +5,10 @@ class AeonTopContainerRequest
 
     out['publish'] = json['is_linked_to_published_record']
 
-    collection = json['collection'].first
-    out['collection_id'] = collection['identifier']
-    out['collection_title'] = collection['display_string']
+    if (collection = json['collection'].first)
+      out['collection_id'] = collection['identifier']
+      out['collection_title'] = collection['display_string']
+    end
 
     restrictions_notes = json['active_restrictions'].map {|a| a['linked_records']['_resolved']['notes']}.flatten
     out['accessrestrict'] = AeonRequest.access_restrictions_content(restrictions_notes)
