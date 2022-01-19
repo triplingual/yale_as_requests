@@ -131,6 +131,42 @@ class AeonGridRowPopulator
 
     @aeon_grid_rows = Search.search(search_params, nil).fetch('results', [])
                             .map{|result| ContainerRow.new(result) }
+
+    # find archival objects (BornDigital)
+    DB.open do |db|
+      resource_id = JSONModel::JSONModel(:resource).id_for(uri)
+      born_digital_uris = db[:archival_object]
+        .join(:rights_restriction, Sequel.qualify(:rights_restriction, :archival_object_id) => Sequel.qualify(:archival_object, :id))
+        .join(:rights_restriction_type, Sequel.qualify(:rights_restriction_type, :rights_restriction_id) => Sequel.qualify(:rights_restriction, :id))
+        .filter(Sequel.qualify(:archival_object, :root_record_id) => resource_id)
+        .filter(Sequel.qualify(:rights_restriction_type, :restriction_type_id) => BackendEnumSource.id_for_value('restriction_type', 'BornDigital'))
+        .select(Sequel.qualify(:archival_object, :id),
+                Sequel.qualify(:archival_object, :repo_id))
+        .map {|result| JSONModel::JSONModel(:archival_object).uri_for(result[:id], :repo_id => result[:repo_id])}
+
+      uri_query = AdvancedQueryBuilder.new
+      born_digital_uris.each do |ao_uri|
+        uri_query.or('id', ao_uri, 'text', true)
+      end
+
+      search_params = base_search_params.merge({
+                                                 :type => ['archival_object'],
+                                                 :aq => uri_query.build,
+                                               })
+
+      Search.search(search_params, nil).fetch('results', []).each_slice(16) do |matching_aos|
+        ao_jsonmodels = matching_aos.map {|result|
+          JSONModel::JSONModel(:archival_object).from_hash(ASUtils.json_parse(result.fetch('json')),
+                                                           false, true)
+        }
+
+        merged_record_hashes = RecordInheritance.merge(URIResolver.resolve_references(ao_jsonmodels, @resolve_params))
+
+        matching_aos.zip(merged_record_hashes).each do |result, inherited_json|
+            @aeon_grid_rows << BornDigitalRow.new(result, inherited_json)
+        end
+      end
+    end
   end
 
 end
