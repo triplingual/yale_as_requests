@@ -6,6 +6,7 @@
     <% mapper.map.each do |name, value| %>
       <% if name.casecmp('requests').zero? %>
         <% value.each_with_index do |request, request_index| %>
+          <input type='hidden' name='Request' value='<%= request_index + 1 %>' />
           <% request.each do |request_param, request_value| %>
             <input type='hidden' name='<%= request_param %>_<%= request_index + 1 %>' value='<%= strip_tags(request_value.to_s) %>' />
           <% end %>
@@ -18,8 +19,9 @@
     <% mapper.map.each do |name, value| %>
       <% if name.casecmp('requests').zero? %>
         <% value.each_with_index do |request, request_index| %>
+          <input type='hidden' name='Request' value='1' />
           <% request.each do |request_param, request_value| %>
-            <input type='hidden' name='<%= request_param %>' value='<%= strip_tags(request_value.to_s) %>' />
+            <input type='hidden' name='<%= request_param %>_1' value='<%= strip_tags(request_value.to_s) %>' />
           <% end %>
         <% end %>
       <% else %>
