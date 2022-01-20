@@ -24,7 +24,7 @@ class AeonArchivalObjectRequest
       cite += ". #{mapped['collection_title']}, #{mapped['collection_id']}. #{mapped['repo_name']}."
     end
 
-    "#{cite}  #{AppConfig[:public_proxy_url]}#{json['uri']}  Accessed  #{Time.now.strftime("%B %d, %Y")}"
+    "#{cite}  #{AppConfig[:public_proxy_url]}#{json['uri']}  Accessed #{Time.now.strftime("%B %d, %Y")}"
   end
 
 
