@@ -31,8 +31,7 @@ class AeonTopContainerRequest
       out['identifier'] = series['identifier']
       out['publish'] = series['publish']
       out['level'] = series['level_display_string']
-      # FIXME: strip_mixed_content
-      out['title'] = series['display_string']
+      out['title'] = AeonRequest.strip_mixed_content(series['display_string'])
       out['uri'] = series['ref']
     end
 

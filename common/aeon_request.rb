@@ -1,3 +1,5 @@
+require 'nokogiri'
+
 require_relative 'aeon_archival_object_request'
 require_relative 'aeon_top_container_request'
 
@@ -93,6 +95,9 @@ class AeonRequest
   end
 
   def self.build_top_container(json, request)
+    # tidy up series display strings before we start
+    json['series'].each { |s| s['display_string'] = AeonRequest.strip_mixed_content(s['display_string']) }
+
     request["instance_top_container_long_display_string"] = json['long_display_string']
     request["instance_top_container_last_modified_by"] = json['last_modified_by']
     request["instance_top_container_display_string"] = json['display_string']
@@ -200,6 +205,22 @@ class AeonRequest
     notes.select {|n| n['type'] == 'accessrestrict'}
          .map {|n| n['subnotes'].map {|s| s['content']}.join(' ')}
          .join('; ')
+  end
+
+
+  # nicked verbatim from the pui
+  def self.strip_mixed_content(in_text)
+    return if !in_text
+
+    # Don't fire up nokogiri if there's no mixed content to parse
+    unless in_text.include?("<")
+      return in_text
+    end
+
+    in_text = in_text.gsub(/ & /, ' &amp; ')
+    @frag = Nokogiri::XML.fragment(in_text)
+
+    @frag.content
   end
 
 end

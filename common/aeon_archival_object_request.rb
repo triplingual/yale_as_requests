@@ -37,8 +37,7 @@ class AeonArchivalObjectRequest
 
     out['level'] = I18n.t('enumerations.archival_record_level.' + json['level'], :default => json['level'])
 
-    # FIXME: strip_mixed_content
-    out['title'] = json['title']
+    out['title'] = AeonRequest.strip_mixed_content(json['title'])
 
     resource = opts[:resource] || json['resource']['_resolved']
     out['collection_id'] = [0,1,2,3].map{|ix| resource["id_#{ix}"]}.compact.join('-')
