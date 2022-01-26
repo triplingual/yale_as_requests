@@ -65,7 +65,7 @@ The `YaleAeonSpace` add-on provides a single input field which when actioned sen
 
 The search logic is as follows (`q` is the incoming query string):
 
-* Check if `q` a call number i.e. does a resource identifier exactly match this value.
+* Check if `q` is a call number i.e. does a resource identifier exactly match this value.
     * Yes! We are now a Call Number search!
     * No. Just a Normal search :(
 
@@ -84,6 +84,7 @@ Find archival objects where:
 * `q` matches the component id or
 * `q` matches the ref id or
 * `q` matches the URI
+
 For any matching archival objects we return a row entry for each linked container.  If the archival object is a BornDigital item, then the archival object itself is mapped and returned as a result row.
 
 ## Note
