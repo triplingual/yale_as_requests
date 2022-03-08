@@ -1,6 +1,7 @@
 <%= form_tag url_for(:controller => :aeon_request, :action => :build) do |f| %>
   <%= hidden_field_tag 'uri', record.uri %>
   <div>
+    <% record_display_string = mapper.record.strip_mixed_content(mapper.record.display_string) %>
     <% if finding_aid_view %>
       <%
         resource = record.resolved_resource
@@ -8,19 +9,19 @@
                                                       .select{|s| record.json['ancestors'].map{|a| a['ref']}.include?(s['ref'])}
                                                       .first
       %>
-      <h3><%= resource['title'] %> (<%= (0..3).map{|n| resource["id_#{n}"]}.compact.join('-') %>)</h3>
+      <h3><%= record.strip_mixed_content(resource['title']) %> (<%= (0..3).map{|n| resource["id_#{n}"]}.compact.join('-') %>)</h3>
 
       <% if series %>
-        <h4><%= series %></h4>
-        <h5><%= record.display_string %></h5>
+        <h4><%= record.strip_mixed_content(series) %></h4>
+        <h5><%= record_display_string %></h5>
       <% else %>
-        <h4><%= record.display_string %></h4>
+        <h4><%= record_display_string %></h4>
       <% end %>
     <% end %>
 
 
     <% if mapper.kind_of?(AeonContainerMapper) %>
-      <h3><%= mapper.record.display_string %></li></h3>
+      <h3><%= record_display_string %></li></h3>
       <p><strong><%= I18n.t('plugins.aeon_fulfillment.request_reading_room_button') %></strong></p>
       <%= hidden_field_tag 'request_type', AeonRecordMapper::REQUEST_TYPE_READING_ROOM %>
     <% else %>
@@ -59,7 +60,7 @@
               </td>
               <td>
                 <i class="fa fa-th" title="Record is born digital"></i>
-                <%= label_tag 'aeon_born_digital', record.display_string %>
+                <%= label_tag 'aeon_born_digital', record_display_string %>
               </td>
             </tr>
           <% else %>
