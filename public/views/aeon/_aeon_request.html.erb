@@ -1,9 +1,6 @@
 <%= form_tag request_type_config.fetch(:aeon_uri), :id => 'aeon_request_sub', :target => (mapper.repo_settings.fetch(:request_in_new_tab, false) ? 'aeon_request' : '_self') do |f| %>
-  <% request_type_config.fetch(:extra_params, []).each do |name, value| %>
-    <input type='hidden' name='<%= name %>' value='<%= value %>' />
-  <% end %>
   <% if mapper.request_type == AeonRecordMapper::REQUEST_TYPE_READING_ROOM %>
-    <% mapper.map.each do |name, value| %>
+    <% mapper.map(request_type_config.fetch(:extra_params, {}), request_type_config.fetch(:fallback_params, {})).each do |name, value| %>
       <% if name.casecmp('requests').zero? %>
         <% value.each_with_index do |request, request_index| %>
           <input type='hidden' name='Request' value='<%= request_index + 1 %>' />
@@ -16,7 +13,7 @@
       <% end %>
     <% end %>
   <% elsif mapper.request_type == AeonRecordMapper::REQUEST_TYPE_PHOTODUPLICATION %>
-    <% mapper.map.each do |name, value| %>
+    <% mapper.map(request_type_config.fetch(:extra_params, {}), request_type_config.fetch(:fallback_params, {})).each do |name, value| %>
       <% if name.casecmp('requests').zero? %>
         <% value.each_with_index do |request, request_index| %>
           <% request.each do |request_param, request_value| %>

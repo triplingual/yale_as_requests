@@ -24,7 +24,7 @@ class AeonRecordMapper
     end
 
 
-    def map
+    def map(extra_params = {}, fallback_params = {})
       selected_container_instances = nil
 
       if @requested_instance_indexes
@@ -38,9 +38,19 @@ class AeonRecordMapper
           end
       end
 
-      AeonRequest.build(self.record.json,
-                        :resource => self.record.resolved_resource,
-                        :selected_container_instances => selected_container_instances)
+      result = AeonRequest.build(self.record.json,
+                                 :resource => self.record.resolved_resource,
+                                 :selected_container_instances => selected_container_instances)
+
+      extra_params.each do |field, value|
+        result[field] = value
+      end
+
+      fallback_params.each do |field, value|
+        result[field] ||= value
+      end
+
+      result
     end
 
 
@@ -103,7 +113,8 @@ class AeonRecordMapper
               :request_type => REQUEST_TYPE_PHOTODUPLICATION,
               :button_label => I18n.t('plugins.aeon_fulfillment.request_digital_copy_button'),
               :button_help_text => I18n.t('plugins.aeon_fulfillment.request_digital_copy_help_text'),
-              :extra_params => {'RequestType' => 'Copy', 'DocumentType' => 'Default'}
+              :extra_params => {'RequestType' => 'Copy'},
+              :fallback_params => {'DocumentType' => 'Default'},
             }
         end
 
