@@ -4,7 +4,7 @@ class AeonArchivalObjectRequest
   def self.citation(json, mapped)
     cite = ''
     if note = json['notes'].find{|n| n['type'] == 'prefercite'}
-      cite = note['subnotes'].map{|sn| sn['content']}.join('; ')
+      cite = note['subnotes'].map{|sn| sn['content'].strip}.join('; ')
     else
       cite = "#{json['component_id']}, " if json['component_id']
       cite += mapped['title']
