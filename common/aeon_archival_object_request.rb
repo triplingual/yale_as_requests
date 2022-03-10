@@ -86,7 +86,7 @@ class AeonArchivalObjectRequest
     out['ItemCitation'] = citation(json, out)
 
     out['ItemDate'] = json['dates'].map {|d|
-      I18n.t("enumerations.date_label.#{d['label']}") + '  ' + (d['expression'] || ([d['begin'], d['end']].compact.join(' - ')))
+      (d['expression'] || ([d['begin'], d['end']].compact.join(' - ')))
     }.join(', ')
 
     out['ItemInfo13'] = out['component_id']
