@@ -27,7 +27,7 @@ class AeonRecordMapper
     def map(extra_params = {}, fallback_params = {})
       selected_container_instances = nil
 
-      if @requested_instance_indexes
+      if @requested_instance_indexes && self.record.json['instances']
           selected_container_instances = []
 
           self.record.json['instances'].each_with_index do |instance, idx|
