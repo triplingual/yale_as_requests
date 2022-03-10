@@ -38,9 +38,15 @@ class AeonRecordMapper
           end
       end
 
+      resolved_top_containers = {}
+      self.record.raw.fetch('_resolved_top_container_uri_u_sstr', {}).each do |container_ref, resolved_results|
+          resolved_top_containers[container_ref] = ASUtils.json_parse(resolved_results.fetch(0).fetch('json'))
+      end
+
       result = AeonRequest.build(self.record.json,
                                  :resource => self.record.resolved_resource,
-                                 :selected_container_instances => selected_container_instances)
+                                 :selected_container_instances => selected_container_instances,
+                                 :resolved_top_containers => resolved_top_containers)
 
       extra_params.each do |field, value|
         result[field] = value

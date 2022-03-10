@@ -56,7 +56,7 @@ class AeonRequest
   end
 
 
-  def self.build_requests(instances)
+  def self.build_requests(instances, opts = {})
     instances.map do |instance|
       request = {}
 
@@ -85,8 +85,12 @@ class AeonRequest
         (container["type_#{lvl}"] || '').downcase == 'item_barcode' ? container["indicator_#{lvl}"] : nil
       }.compact.join('; ')
 
+      # if opts[:resolved_top_containers] take this JSON as it is fully resolved
+      top_container_ref = container['top_container']['ref']
+      resolved_top_container = opts.fetch(:resolved_top_containers, {})
+                                   .fetch(top_container_ref, container['top_container']['_resolved'])
 
-      AeonRequest.build_top_container(container['top_container']['_resolved'], request)
+      AeonRequest.build_top_container(resolved_top_container, request)
 
       request.delete_if{|k,v| v.nil? || v.is_a?(String) && v.empty?}
 
@@ -123,11 +127,10 @@ class AeonRequest
     request["ItemIssue"] = json['series'].map{|s| s['level_display_string'] + ' ' + s['identifier'] + '. ' + s['display_string']}.join('; ')
 
     if (loc = json['container_locations'].find{|cl| cl['status'] == 'current'})
-      # FIXME: locations are not resolved in the pui index json for aos and there seems to be
-      #        no way to resolve them without getting the top_containers individually (which do have them resolved)
-      #        so skipping for now if we lack '_resolved'.
-      request["Location"] = loc['_resolved']['title'].sub(/\[\d{5}, /, '[') if loc['_resolved']
-      request['instance_top_container_long_display_string'] = request['Location']
+      if (resolved_location = loc['_resolved'])
+        request["Location"] = resolved_location['title'].sub(/\[\d{5}, /, '[')
+        request['instance_top_container_long_display_string'] = request['Location']
+      end
 
       # ItemInfo11 (location uri)
       request["ItemInfo11"] = loc['ref']
