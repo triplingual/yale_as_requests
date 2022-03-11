@@ -88,6 +88,10 @@ class AeonRecordMapper
     end
 
     def request_type_available?(request_type)
+        if AppConfig.has_key?(:aeon_disabled_request_types)
+            return false if AppConfig[:aeon_disabled_request_types].include?(request_type)
+        end
+
         disable_for_types = disable_for_restriction_types(request_type)
 
         return false if any_local_access_restriction_type?(disable_for_types)
