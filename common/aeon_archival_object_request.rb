@@ -4,7 +4,7 @@ class AeonArchivalObjectRequest
   def self.citation(json, mapped)
     cite = ''
     if note = json['notes'].find{|n| n['type'] == 'prefercite'}
-      cite = note['subnotes'].map{|sn| sn['content']}.join('; ')
+      cite = note['subnotes'].map{|sn| sn['content'].strip}.join('; ')
     else
       cite = "#{json['component_id']}, " if json['component_id']
       cite += mapped['title']
@@ -24,7 +24,7 @@ class AeonArchivalObjectRequest
       cite += ". #{mapped['collection_title']}, #{mapped['collection_id']}. #{mapped['repo_name']}."
     end
 
-    "#{cite}  #{AppConfig[:public_proxy_url]}#{json['uri']}  Accessed #{Time.now.strftime("%B %d, %Y")}"
+    "#{cite}"
   end
 
 
@@ -86,7 +86,7 @@ class AeonArchivalObjectRequest
     out['ItemCitation'] = citation(json, out)
 
     out['ItemDate'] = json['dates'].map {|d|
-      I18n.t("enumerations.date_label.#{d['label']}") + '  ' + (d['expression'] || ([d['begin'], d['end']].compact.join(' - ')))
+      (d['expression'] || ([d['begin'], d['end']].compact.join(' - ')))
     }.join(', ')
 
     out['ItemInfo13'] = out['component_id']
