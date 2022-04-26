@@ -59,6 +59,7 @@
                     data: new FormData(self.$form[0]),
                     processData: false,
                     contentType: false,
+                    async: false,
                     success: function(html) {
                         $('#aeonRequestFormWrapper').remove();
                         $(document.body).append('<div id="aeonRequestFormWrapper">');
