@@ -80,7 +80,6 @@ class AeonArchivalObjectRequest
 
     unless (digital_objects = opts.fetch(:resolved_digital_objects, json['instances'].map{|instance| instance.dig('digital_object', '_resolved')}.compact)).empty?
       out['ItemInfo9'] = digital_objects.map{|do_json| "#{JSONModel(:digital_object).id_for(do_json.fetch('uri'))} (#{do_json.fetch('publish') ? 'P' : 'U'})"}.uniq.join('; ')
-      opts['ItemInfo9'] = out['ItemInfo9']
     end
 
     out['component_id'] = json['component_id']

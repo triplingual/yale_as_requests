@@ -85,9 +85,6 @@ class AeonRequest
         (container["type_#{lvl}"] || '').downcase == 'item_barcode' ? container["indicator_#{lvl}"] : nil
       }.compact.join('; ')
 
-      # duplicate the parent item's digital object listing (ItemInfo9) for each request
-      request['ItemInfo9'] = opts.fetch('ItemInfo9', nil)
-
       # if opts[:resolved_top_containers] take this JSON as it is fully resolved
       top_container_ref = container['top_container']['ref']
       resolved_top_container = opts.fetch(:resolved_top_containers, {})
