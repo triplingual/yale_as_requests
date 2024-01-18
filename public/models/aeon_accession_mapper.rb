@@ -36,14 +36,14 @@ class AeonAccessionMapper < AeonRecordMapper
             mappings['collection_id'] += '; ' + json['user_defined']['text_1'] if json['user_defined']['text_1']
         end
 
-        # ItemInfo5 (access restriction notes)
-        mappings['ItemInfo5'] = json['access_restrictions_note']
+        # Access restriction notes
+        mappings['Transaction.CustomFields.AccessRestrictionNote'] = json['access_restrictions_note']
 
-        # ItemInfo6 (use_restrictions_note)
-        mappings['ItemInfo6'] = json['use_restrictions_note']
+        # Use restrictions note
+        mappings['Transaction.CustomFields.UseRestrictionNote'] = json['use_restrictions_note']
 
-        # ItemInfo7 (extents)
-        mappings['ItemInfo7'] = json['extents'].select {|e| !e.has_key?('_inherited')}
+        # Extents
+        mappings['Transaction.CustomFields.ExtentPhysicalDescription'] = json['extents'].select {|e| !e.has_key?('_inherited')}
                                              .map {|e| "#{e['number']} #{e['extent_type']}"}.join('; ')
 
         # ItemAuthor (creators)

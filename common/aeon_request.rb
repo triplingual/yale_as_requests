@@ -120,10 +120,10 @@ class AeonRequest
 
     request["ReferenceNumber"] = request["instance_top_container_barcode"]
 
-    request['ItemInfo1'] = json['restricted'] ? 'Y' : 'N'
+    request['Transaction.CustomFields.TopContainerRestriction'] = json['restricted'] ? 'Y' : 'N'
 
     request['ItemVolume'] = json['display_string'][0, (json['display_string'].index(':') || json['display_string'].length)]
-    request['ItemInfo10'] = json['uri']
+    request['Transaction.CustomFields.TopContainerURI'] = json['uri']
     request["ItemIssue"] = json['series'].map{|s| s['level_display_string'] + ' ' + s['identifier'] + '. ' + s['display_string']}.join('; ')
 
     if (loc = json['container_locations'].find{|cl| cl['status'] == 'current'})
@@ -132,8 +132,8 @@ class AeonRequest
         request['instance_top_container_long_display_string'] = request['Location']
       end
 
-      # ItemInfo11 (location uri)
-      request["ItemInfo11"] = loc['ref']
+      # Location URI
+      request["Transaction.CustomFields.LocationURI"] = loc['ref']
     else
       # added this so that we don't wind up with the default Aeon mapping here, which maps the top container long display name to the location.
       request['instance_top_container_long_display_string'] = nil
