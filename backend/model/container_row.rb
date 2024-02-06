@@ -13,7 +13,7 @@ class ContainerRow < AeonGridRow
     set('container_title', top_container_json.dig('display_string'))
     set('container_barcode', top_container_json.dig('barcode'))
     set('location', solr_doc.dig('location_display_string_u_sstr', 0))
-    set('restrictions', @request.dig('Transaction.CustomFields.AccessRestrictionNote'))
+    set('restrictions', @request.dig('AccessRestrictionNote'))
     set('published', !!solr_doc.dig('publish'))
   end
 end

@@ -12,16 +12,16 @@ class AeonTopContainerRequest
 
     restrictions_notes = json['active_restrictions'].map {|a| a['linked_records']['_resolved']['notes']}.flatten
     out['accessrestrict'] = AeonRequest.access_restrictions_content(restrictions_notes)
-    out['Transaction.CustomFields.AccessRestrictionNote'] = out['accessrestrict']
-    out['Transaction.CustomFields.RestrictionCode'] = AeonRequest.local_access_restrictions(restrictions_notes)
+    out['AccessRestrictionNote'] = out['accessrestrict']
+    out['RestrictionCode'] = AeonRequest.local_access_restrictions(restrictions_notes)
 
-    out['Transaction.CustomFields.CollectionTitle'] = out['collection_title']
+    out['CollectionTitle'] = out['collection_title']
 
     out['DocumentType'] = AeonRequest.doc_type(json, out['collection_id'])
     out['WebRequestForm'] = AeonRequest.web_request_form(json, out['collection_id'])
 
     out['CallNumber'] = json['collection'].map {|c| c['identifier']}.join('; ')
-    out['Transaction.CustomFields.RootRecordURI'] = json['collection'].map {|c| c['ref']}.join('; ')
+    out['RootRecordURI'] = json['collection'].map {|c| c['ref']}.join('; ')
 
     if cp = json['container_profile']
       out['SubLocation'] = cp['_resolved']['name']
