@@ -77,7 +77,7 @@ class AeonRequest
 
       request["instance_top_container_ref"] = container['top_container']['ref']
 
-      request['ItemEdition'] = ['2', '3'].map {|lvl|
+      request['ItemFolder'] = ['2', '3'].map {|lvl|
         (container["type_#{lvl}"] || '').downcase == 'folder' ? container["indicator_#{lvl}"] : nil
       }.compact.join('; ')
 
