@@ -124,7 +124,7 @@ class AeonRequest
 
     request['ItemVolume'] = json['display_string'][0, (json['display_string'].index(':') || json['display_string'].length)]
     request['TopContainerURI'] = json['uri']
-    request["ItemIssue"] = json['series'].map{|s| s['level_display_string'] + ' ' + s['identifier'] + '. ' + s['display_string']}.join('; ')
+    request["ItemSeries"] = json['series'].map{|s| s['level_display_string'] + ' ' + s['identifier'] + '. ' + s['display_string']}.join('; ')
 
     if (loc = json['container_locations'].find{|cl| cl['status'] == 'current'})
       if (resolved_location = loc['_resolved'])
