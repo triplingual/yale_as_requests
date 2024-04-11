@@ -9,7 +9,7 @@ class BornDigitalRow < AeonGridRow
     set('collection_title', inherited_json.dig('resource','_resolved','title'))
     set('series_title', (ASUtils.wrap(inherited_json['ancestors']).find{|itm| itm['level'] == 'series'} || {}).dig('_resolved', 'display_string'))
     set('call_number', @request.dig('CallNumber'))
-    set('restrictions', @request.dig('ItemInfo5'))
+    set('restrictions', @request.dig('AccessRestrictionNote'))
     set('published', !!solr_doc.dig('publish'))
     set('item_id', inherited_json['component_id'])
     set('item_title', solr_doc['title'])

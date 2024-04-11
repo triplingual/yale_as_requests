@@ -19,7 +19,7 @@ class ContainerAndItemRow < AeonGridRow
     set('container_title', target_instance.dig('sub_container', 'top_container', '_resolved', 'display_string'))
     set('container_barcode', target_instance.dig('sub_container', 'top_container', '_resolved', 'barcode'))
     set('location', container_location.dig('_resolved', 'title'))
-    set('restrictions', @request.dig('ItemInfo5'))
+    set('restrictions', @request.dig('AccessRestrictionNote'))
     set('published', !!solr_doc.dig('publish'))
     set('item_id', inherited_json['component_id'])
     set('item_title', solr_doc['title'])

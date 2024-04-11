@@ -9,8 +9,6 @@ class AeonAccessionMapper < AeonRecordMapper
     def system_information
         mapped = super
 
-        # Should ask that AUG update the Aeon database at the time this mapping goes into place.
-        # If so, they'd just need to move over data from ItemInfo2 to EADNumber for the ArchivesSpace requests up until that date.
         mapped['EADNumber'] = mapped['ReturnLinkURL']
 
         # Site (repo_code)
@@ -36,14 +34,14 @@ class AeonAccessionMapper < AeonRecordMapper
             mappings['collection_id'] += '; ' + json['user_defined']['text_1'] if json['user_defined']['text_1']
         end
 
-        # ItemInfo5 (access restriction notes)
-        mappings['ItemInfo5'] = json['access_restrictions_note']
+        # Access restriction notes
+        mappings['AccessRestrictionNote'] = json['access_restrictions_note']
 
-        # ItemInfo6 (use_restrictions_note)
-        mappings['ItemInfo6'] = json['use_restrictions_note']
+        # Use restrictions note
+        mappings['UseRestrictionNote'] = json['use_restrictions_note']
 
-        # ItemInfo7 (extents)
-        mappings['ItemInfo7'] = json['extents'].select {|e| !e.has_key?('_inherited')}
+        # Extents
+        mappings['ExtentPhysicalDescription'] = json['extents'].select {|e| !e.has_key?('_inherited')}
                                              .map {|e| "#{e['number']} #{e['extent_type']}"}.join('; ')
 
         # ItemAuthor (creators)
